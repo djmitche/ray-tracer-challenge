@@ -17,6 +17,11 @@ impl Color {
             blue: blue.into(),
         }
     }
+
+    /// Iterate over the elements of the color in RGB order.
+    pub fn iter(&self) -> ColorIterator<'_> {
+        ColorIterator(self, 0)
+    }
 }
 
 impl Default for Color {
@@ -105,6 +110,23 @@ impl std::ops::Mul for Color {
             green: self.green * other.green,
             blue: self.blue * other.blue,
         }
+    }
+}
+
+pub struct ColorIterator<'a>(&'a Color, u8);
+
+impl Iterator for ColorIterator<'_> {
+    type Item = f64;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let v = match self.1 {
+            0 => self.0.red,
+            1 => self.0.green,
+            2 => self.0.blue,
+            _ => return None,
+        };
+        self.1 += 1;
+        Some(v)
     }
 }
 

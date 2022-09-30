@@ -1,5 +1,7 @@
 use crate::Color;
-use itertools::Itertools;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 
 pub struct Canvas {
     width: usize,
@@ -26,11 +28,20 @@ impl Canvas {
         self.height
     }
 
-    pub fn write_ppm(&self, mut w: impl std::io::Write) -> std::io::Result<()> {
+    pub fn write_ppm_file(&self, filename: &str) -> std::io::Result<()> {
+        let path = Path::new(filename);
+        let mut file = File::create(&path)?;
+        self.write_ppm(&mut file)?;
+        Ok(())
+    }
+
+    pub fn write_ppm(&self, w: impl std::io::Write) -> std::io::Result<()> {
+        let mut w = std::io::BufWriter::new(w);
         write!(w, "P3\n")?; // magic
         write!(w, "{} {}\n", self.width, self.height)?;
         write!(w, "255\n")?; // max color
 
+        // convert a float to a clamped u8
         fn to_int(v: f64) -> u8 {
             if v < 0.0 {
                 0
@@ -40,23 +51,32 @@ impl Canvas {
                 (v * 256.0) as u8
             }
         }
+
         for y in 0..self.height {
             let offset = self.width * y;
             let row = self.pixels[offset..offset + self.width]
                 .iter()
-                .map(|col| {
-                    format!(
-                        "{} {} {}",
-                        to_int(col.red),
-                        to_int(col.green),
-                        to_int(col.blue)
-                    )
-                })
-                .join(" ");
-            for line in textwrap::wrap(&row, 70) {
-                write!(w, "{}\n", line).unwrap();
+                .flat_map(|col| col.iter().map(to_int));
+            let mut linelen = 0;
+            let mut sep = "";
+            for v in row {
+                let vlen = match v {
+                    0..=9 => 1,
+                    10..=100 => 2,
+                    _ => 3,
+                };
+                if linelen + sep.len() + vlen > 70 {
+                    write!(w, "\n{}", v)?;
+                    linelen = 0;
+                } else {
+                    write!(w, "{}{}", sep, v)?;
+                    linelen += sep.len() + vlen;
+                }
+                sep = " ";
             }
+            write!(w, "\n")?;
         }
+        w.flush()?;
         Ok(())
     }
 }
