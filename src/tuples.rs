@@ -2,7 +2,7 @@
 #![allow(unused_imports)]
 use approx::{relative_eq, AbsDiffEq, RelativeEq};
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub struct Tup {
     pub x: f64,
     pub y: f64,
@@ -12,6 +12,20 @@ pub struct Tup {
 
 /// Tup represents a tuple.
 impl Tup {
+    /// Create a new tuple.
+    pub fn new<X: Into<f64>, Y: Into<f64>, Z: Into<f64>, W: Into<f64>>(
+        x: X,
+        y: Y,
+        z: Z,
+        w: W,
+    ) -> Self {
+        Self {
+            x: x.into(),
+            y: y.into(),
+            z: z.into(),
+            w: w.into(),
+        }
+    }
     /// Create a new tuple as a point (with w coordinate equal to 1)
     pub fn point<X: Into<f64>, Y: Into<f64>, Z: Into<f64>>(x: X, y: Y, z: Z) -> Self {
         Self {
@@ -70,6 +84,32 @@ impl Tup {
             self.z * other.x - self.x * other.z,
             self.x * other.y - self.y * other.x,
         )
+    }
+}
+
+impl std::ops::Index<usize> for Tup {
+    type Output = f64;
+
+    fn index(&self, idx: usize) -> &Self::Output {
+        match idx {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            3 => &self.w,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl std::ops::IndexMut<usize> for Tup {
+    fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
+        match idx {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            3 => &mut self.w,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -170,6 +210,22 @@ impl std::ops::Div<f64> for Tup {
 mod test {
     use super::*;
     use approx::*;
+
+    /// A tuple with w=1.0 is a point
+    #[test]
+    fn tuple() {
+        let a = Tup::new(4.3, -4.2, 3.1, 2.0);
+        assert_relative_eq!(a.x, 4.3);
+        assert_relative_eq!(a[0], 4.3);
+        assert_relative_eq!(a.y, -4.2);
+        assert_relative_eq!(a[1], -4.2);
+        assert_relative_eq!(a.z, 3.1);
+        assert_relative_eq!(a[2], 3.1);
+        assert_relative_eq!(a.w, 2.0);
+        assert_relative_eq!(a[3], 2.0);
+        assert!(!a.is_point());
+        assert!(!a.is_vector());
+    }
 
     /// A tuple with w=1.0 is a point
     #[test]
