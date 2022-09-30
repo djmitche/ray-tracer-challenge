@@ -10,11 +10,21 @@ pub struct Color {
 }
 
 impl Color {
-    fn new<R: Into<f64>, G: Into<f64>, B: Into<f64>>(red: R, green: G, blue: B) -> Self {
+    pub fn new<R: Into<f64>, G: Into<f64>, B: Into<f64>>(red: R, green: G, blue: B) -> Self {
         Self {
             red: red.into(),
             green: green.into(),
             blue: blue.into(),
+        }
+    }
+}
+
+impl Default for Color {
+    fn default() -> Self {
+        Self {
+            red: 0.0,
+            green: 0.0,
+            blue: 0.0,
         }
     }
 }
