@@ -182,6 +182,84 @@ impl Mat<4> {
         }
         res
     }
+
+    pub fn translate<X: Into<f64>, Y: Into<f64>, Z: Into<f64>>(&self, x: X, y: Y, z: Z) -> Self {
+        return mat4![
+            1, 0, 0, x;
+            0, 1, 0, y;
+            0, 0, 1, z;
+            0, 0, 0, 1;
+        ] * *self;
+    }
+
+    pub fn scale<X: Into<f64>, Y: Into<f64>, Z: Into<f64>>(&self, x: X, y: Y, z: Z) -> Self {
+        return mat4![
+            x, 0, 0, 0;
+            0, y, 0, 0;
+            0, 0, z, 0;
+            0, 0, 0, 1;
+        ] * *self;
+    }
+
+    pub fn rotate_x<R: Into<f64>>(&self, r: R) -> Self {
+        let r = r.into();
+        let c = r.cos();
+        let s = r.sin();
+        return mat4![
+            1, 0,  0, 0;
+            0, c, -s, 0;
+            0, s,  c, 0;
+            0, 0,  0, 1;
+        ] * *self;
+    }
+
+    pub fn rotate_y<R: Into<f64>>(&self, r: R) -> Self {
+        let r = r.into();
+        let c = r.cos();
+        let s = r.sin();
+        return mat4![
+            c,  0, s, 0;
+            0,  1, 0, 0;
+            -s, 0, c, 0;
+            0,  0, 0, 1;
+        ] * *self;
+    }
+
+    pub fn rotate_z<R: Into<f64>>(&self, r: R) -> Self {
+        let r = r.into();
+        let c = r.cos();
+        let s = r.sin();
+        return mat4![
+            c, -s, 0, 0;
+            s,  c, 0, 0;
+            0,  0, 1, 0;
+            0,  0, 0, 1;
+        ] * *self;
+    }
+
+    pub fn shear<
+        XY: Into<f64>,
+        XZ: Into<f64>,
+        YX: Into<f64>,
+        YZ: Into<f64>,
+        ZX: Into<f64>,
+        ZY: Into<f64>,
+    >(
+        &self,
+        xy: XY,
+        xz: XZ,
+        yx: YX,
+        yz: YZ,
+        zx: ZX,
+        zy: ZY,
+    ) -> Self {
+        return mat4![
+            1, xy,  xz, 0;
+            yx, 1,  yz, 0;
+            zx, zy, 1,  0;
+            0,  0,  0,  1;
+        ] * *self;
+    }
 }
 
 impl<const N: usize> Default for Mat<N> {
@@ -286,6 +364,7 @@ impl std::ops::Mul<Tup> for Mat<4> {
 mod test {
     use super::*;
     use approx::*;
+    use std::f64::consts::PI;
 
     /// Constructing and inspecting a 4x4 matrix
     #[test]
@@ -657,5 +736,135 @@ mod test {
             max_relative: 0.00001,
         }
         .eq(&(c * b.inverse()), &a));
+    }
+
+    #[test]
+    fn mult_by_translation() {
+        let transform = Mat::identity().translate(5, -3, 2);
+        let p = Tup::point(-3, 4, 5);
+        assert_relative_eq!(transform * p, Tup::point(2, 1, 7));
+    }
+
+    #[test]
+    fn mult_by_inv_translation() {
+        let transform = Mat::identity().translate(5, -3, 2);
+        let p = Tup::point(-3, 4, 5);
+        assert_relative_eq!(transform.inverse() * p, Tup::point(-8, 7, 3));
+    }
+
+    #[test]
+    fn trans_does_not_affect_vectors() {
+        let transform = Mat::identity().translate(5, -3, 2);
+        let v = Tup::vector(-3, 4, 5);
+        assert_relative_eq!(transform * v, v);
+    }
+
+    #[test]
+    fn scaling_pt() {
+        let transform = Mat::identity().scale(2, 3, 4);
+        let p = Tup::point(-4, 6, 8);
+        assert_relative_eq!(transform * p, Tup::point(-8, 18, 32));
+    }
+
+    #[test]
+    fn scaling_vec() {
+        let transform = Mat::identity().scale(2, 3, 4);
+        let p = Tup::vector(-4, 6, 8);
+        assert_relative_eq!(transform * p, Tup::vector(-8, 18, 32));
+    }
+
+    #[test]
+    fn scaling_vec_inv() {
+        let transform = Mat::identity().scale(2, 3, 4);
+        let p = Tup::vector(-4, 6, 8);
+        assert_relative_eq!(transform.inverse() * p, Tup::vector(-2, 2, 2));
+    }
+
+    #[test]
+    fn scaling_reflect() {
+        let transform = Mat::identity().scale(-1, 1, 1);
+        let p = Tup::point(2, 3, 4);
+        assert_relative_eq!(transform * p, Tup::point(-2, 3, 4));
+    }
+
+    #[test]
+    fn rot_x() {
+        let p = Tup::point(0, 1, 0);
+        assert_relative_eq!(
+            Mat::identity().rotate_x(PI / 4.0) * p,
+            Tup::point(0, 2f64.sqrt() / 2.0, 2f64.sqrt() / 2.0)
+        );
+        assert_relative_eq!(Mat::identity().rotate_x(PI / 2.0) * p, Tup::point(0, 0, 1));
+    }
+
+    #[test]
+    fn rot_y() {
+        let p = Tup::point(0, 0, 1);
+        assert_relative_eq!(
+            Mat::identity().rotate_y(PI / 4.0) * p,
+            Tup::point(2f64.sqrt() / 2.0, 0, 2f64.sqrt() / 2.0)
+        );
+        assert_relative_eq!(Mat::identity().rotate_y(PI / 2.0) * p, Tup::point(1, 0, 0));
+    }
+
+    #[test]
+    fn rot_z() {
+        let p = Tup::point(0, 1, 0);
+        assert_relative_eq!(
+            Mat::identity().rotate_z(PI / 4.0) * p,
+            Tup::point(-2f64.sqrt() / 2.0, 2f64.sqrt() / 2.0, 0)
+        );
+        assert_relative_eq!(Mat::identity().rotate_z(PI / 2.0) * p, Tup::point(-1, 0, 0));
+    }
+
+    #[test]
+    fn shear() {
+        let p = Tup::point(2, 3, 4);
+        assert_relative_eq!(
+            Mat::identity().shear(1, 0, 0, 0, 0, 0) * p,
+            Tup::point(5, 3, 4)
+        );
+        assert_relative_eq!(
+            Mat::identity().shear(0, 1, 0, 0, 0, 0) * p,
+            Tup::point(6, 3, 4)
+        );
+        assert_relative_eq!(
+            Mat::identity().shear(0, 0, 1, 0, 0, 0) * p,
+            Tup::point(2, 5, 4)
+        );
+        assert_relative_eq!(
+            Mat::identity().shear(0, 0, 0, 1, 0, 0) * p,
+            Tup::point(2, 7, 4)
+        );
+        assert_relative_eq!(
+            Mat::identity().shear(0, 0, 0, 0, 1, 0) * p,
+            Tup::point(2, 3, 6)
+        );
+        assert_relative_eq!(
+            Mat::identity().shear(0, 0, 0, 0, 0, 1) * p,
+            Tup::point(2, 3, 7)
+        );
+    }
+
+    #[test]
+    fn combined_xforms() {
+        let p = Tup::point(1, 0, 1);
+        let m = Mat::identity().rotate_x(PI / 2.0);
+        assert_relative_eq!(m * p, Tup::point(1, -1, 0));
+
+        let m = m.scale(5, 5, 5);
+        assert!(Relative {
+            epsilon: 0.00001,
+            max_relative: 0.00001
+        }
+        .eq(&(m * p), &Tup::point(5, -5, 0)));
+
+        let m = m.translate(10, 5, 7);
+        assert_relative_eq!(m * p, Tup::point(15, 0, 7));
+        assert!(Relative {
+            epsilon: 0.00001,
+            max_relative: 0.00001
+        }
+        .eq(&(m * p), &Tup::point(15, 0, 7)));
     }
 }
