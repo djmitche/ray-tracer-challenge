@@ -73,12 +73,12 @@ impl Tup {
     }
 
     /// Compute the dot product of two tuples
-    fn dot(self, other: Self) -> f64 {
+    pub fn dot(self, other: Self) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w
     }
 
     /// Compute the cross product of two tuples
-    fn cross(self, other: Self) -> Self {
+    pub fn cross(self, other: Self) -> Self {
         Tup::vector(
             self.y * other.z - self.z * other.y,
             self.z * other.x - self.x * other.z,
