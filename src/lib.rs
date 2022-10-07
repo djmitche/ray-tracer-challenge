@@ -17,4 +17,7 @@ mod sphere;
 pub use sphere::Sphere;
 
 mod object;
-pub use object::*;
+pub use object::Object;
+
+mod intersect;
+pub use intersect::*;

@@ -1,6 +1,6 @@
 use crate::Ray;
 use crate::Tup;
-use crate::{Intersection, Object};
+use crate::{Intersection, Intersections, Object};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Sphere {
@@ -18,7 +18,7 @@ impl Default for Sphere {
 }
 
 impl Object for Sphere {
-    fn intersect<'o>(&'o self, ray: &Ray) -> Vec<Intersection<'o>> {
+    fn intersect<'o>(&'o self, ray: &Ray) -> Intersections<'o> {
         // TODO: accept an array & return a slice of it
         let sphere_to_ray = ray.origin - self.center;
         let a = ray.direction.dot(ray.direction);
@@ -26,20 +26,20 @@ impl Object for Sphere {
         let c = sphere_to_ray.dot(sphere_to_ray) - 1.0;
         let discriminant = b * b - 4.0 * a * c;
 
+        let mut inters = Intersections::default();
         if discriminant < 0.0 {
-            return vec![];
+            return inters;
         }
 
-        vec![
-            Intersection {
-                t: (-b - discriminant.sqrt()) / (a * 2.0),
-                obj: self,
-            },
-            Intersection {
-                t: (-b + discriminant.sqrt()) / (a * 2.0),
-                obj: self,
-            },
-        ]
+        inters.add(Intersection::new(
+            (-b - discriminant.sqrt()) / (a * 2.0),
+            self,
+        ));
+        inters.add(Intersection::new(
+            (-b + discriminant.sqrt()) / (a * 2.0),
+            self,
+        ));
+        inters
     }
 }
 
@@ -54,10 +54,10 @@ mod test {
         let s = Sphere::default();
 
         let xs = s.intersect(&r);
-        assert_eq!(xs.len(), 2);
-        println!("{:?}", xs);
-        assert_relative_eq!(xs[0].t, 4.0);
-        assert_relative_eq!(xs[1].t, 6.0);
+        let mut it = xs.iter();
+        assert_relative_eq!(it.next().expect("intersection").t, 4.0);
+        assert_relative_eq!(it.next().expect("intersection").t, 6.0);
+        assert!(it.next().is_none());
     }
 
     #[test]
@@ -66,9 +66,10 @@ mod test {
         let s = Sphere::default();
 
         let xs = s.intersect(&r);
-        assert_eq!(xs.len(), 2);
-        assert_relative_eq!(xs[0].t, 5.0);
-        assert_relative_eq!(xs[1].t, 5.0);
+        let mut it = xs.iter();
+        assert_relative_eq!(it.next().expect("intersection").t, 5.0);
+        assert_relative_eq!(it.next().expect("intersection").t, 5.0);
+        assert!(it.next().is_none());
     }
 
     #[test]
@@ -77,7 +78,8 @@ mod test {
         let s = Sphere::default();
 
         let xs = s.intersect(&r);
-        assert_eq!(xs.len(), 0);
+        let mut it = xs.iter();
+        assert!(it.next().is_none());
     }
 
     #[test]
@@ -86,9 +88,10 @@ mod test {
         let s = Sphere::default();
 
         let xs = s.intersect(&r);
-        assert_eq!(xs.len(), 2);
-        assert_relative_eq!(xs[0].t, -1.0);
-        assert_relative_eq!(xs[1].t, 1.0);
+        let mut it = xs.iter();
+        assert_relative_eq!(it.next().expect("intersection").t, -1.0);
+        assert_relative_eq!(it.next().expect("intersection").t, 1.0);
+        assert!(it.next().is_none());
     }
 
     #[test]
@@ -97,8 +100,9 @@ mod test {
         let s = Sphere::default();
 
         let xs = s.intersect(&r);
-        assert_eq!(xs.len(), 2);
-        assert_relative_eq!(xs[0].t, -6.0);
-        assert_relative_eq!(xs[1].t, -4.0);
+        let mut it = xs.iter();
+        assert_relative_eq!(it.next().expect("intersection").t, -6.0);
+        assert_relative_eq!(it.next().expect("intersection").t, -4.0);
+        assert!(it.next().is_none());
     }
 }
