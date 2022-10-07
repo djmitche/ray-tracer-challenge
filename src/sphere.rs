@@ -1,6 +1,6 @@
-use crate::Object;
 use crate::Ray;
 use crate::Tup;
+use crate::{Intersection, Object};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Sphere {
@@ -18,7 +18,7 @@ impl Default for Sphere {
 }
 
 impl Object for Sphere {
-    fn intersect(&self, ray: &Ray) -> Vec<f64> {
+    fn intersect<'o>(&'o self, ray: &Ray) -> Vec<Intersection<'o>> {
         // TODO: accept an array & return a slice of it
         let sphere_to_ray = ray.origin - self.center;
         let a = ray.direction.dot(ray.direction);
@@ -31,8 +31,14 @@ impl Object for Sphere {
         }
 
         vec![
-            (-b - discriminant.sqrt()) / (a * 2.0),
-            (-b + discriminant.sqrt()) / (a * 2.0),
+            Intersection {
+                t: (-b - discriminant.sqrt()) / (a * 2.0),
+                obj: self,
+            },
+            Intersection {
+                t: (-b + discriminant.sqrt()) / (a * 2.0),
+                obj: self,
+            },
         ]
     }
 }
@@ -50,8 +56,8 @@ mod test {
         let xs = s.intersect(&r);
         assert_eq!(xs.len(), 2);
         println!("{:?}", xs);
-        assert_relative_eq!(xs[0], 4.0);
-        assert_relative_eq!(xs[1], 6.0);
+        assert_relative_eq!(xs[0].t, 4.0);
+        assert_relative_eq!(xs[1].t, 6.0);
     }
 
     #[test]
@@ -61,8 +67,8 @@ mod test {
 
         let xs = s.intersect(&r);
         assert_eq!(xs.len(), 2);
-        assert_relative_eq!(xs[0], 5.0);
-        assert_relative_eq!(xs[1], 5.0);
+        assert_relative_eq!(xs[0].t, 5.0);
+        assert_relative_eq!(xs[1].t, 5.0);
     }
 
     #[test]
@@ -81,8 +87,8 @@ mod test {
 
         let xs = s.intersect(&r);
         assert_eq!(xs.len(), 2);
-        assert_relative_eq!(xs[0], -1.0);
-        assert_relative_eq!(xs[1], 1.0);
+        assert_relative_eq!(xs[0].t, -1.0);
+        assert_relative_eq!(xs[1].t, 1.0);
     }
 
     #[test]
@@ -92,7 +98,7 @@ mod test {
 
         let xs = s.intersect(&r);
         assert_eq!(xs.len(), 2);
-        assert_relative_eq!(xs[0], -6.0);
-        assert_relative_eq!(xs[1], -4.0);
+        assert_relative_eq!(xs[0].t, -6.0);
+        assert_relative_eq!(xs[1].t, -4.0);
     }
 }
