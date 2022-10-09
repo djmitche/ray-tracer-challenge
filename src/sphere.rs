@@ -29,8 +29,8 @@ impl Sphere {
 
 impl Object for Sphere {
     fn intersect<'o>(&'o self, ray: &Ray) -> Intersections<'o> {
+        // TODO: store inverted transform
         let ray = self.transform.inverse() * *ray;
-        // TODO: accept an array & return a slice of it
         let sphere_to_ray = ray.origin - self.center;
         let a = ray.direction.dot(ray.direction);
         let b = 2.0 * ray.direction.dot(sphere_to_ray);
