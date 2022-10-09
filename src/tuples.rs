@@ -51,9 +51,29 @@ impl Tup {
         relative_eq!(self.w, 1.0)
     }
 
+    /// Convert a vector to a point.
+    pub fn as_point(&self) -> Self {
+        Self {
+            x: self.x,
+            y: self.y,
+            z: self.z,
+            w: 1.0,
+        }
+    }
+
     /// Determine if this is a vector (w coordinate equal to 0)
     pub fn is_vector(&self) -> bool {
         relative_eq!(self.w, 0.0)
+    }
+
+    /// Convert a point to a vector
+    pub fn as_vector(&self) -> Self {
+        Self {
+            x: self.x,
+            y: self.y,
+            z: self.z,
+            w: 0.0,
+        }
     }
 
     /// Determine the magnitude of this tuple

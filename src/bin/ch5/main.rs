@@ -1,6 +1,6 @@
 use ray_tracer_challenge::*;
 
-const SIZE: usize = 300;
+const SIZE: usize = 1000;
 const CAMERA_Z: f64 = -5.0;
 const WALL_Z: f64 = 10.0;
 const WALL_SIZE: f64 = 7.0;

@@ -1,37 +1,35 @@
-use crate::{Intersection, Intersections, Object};
-use crate::{Mat, Ray, Tup};
+use crate::{Intersection, Intersections, Mat, Object, Ray, Tup};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Sphere {
-    pub center: Tup,
-    pub radius: f64,
-    pub transform: Mat<4>,
+    pub inv_transform: Mat<4>,
+    pub inv_transp_transform: Mat<4>,
 }
 
 impl Default for Sphere {
     fn default() -> Self {
         Self {
-            center: Tup::point(0, 0, 0),
-            radius: 1.0,
-            transform: Mat::identity(),
+            inv_transform: Mat::identity(),
+            inv_transp_transform: Mat::identity(),
         }
     }
 }
 
 impl Sphere {
     pub fn with_transform(transform: Mat<4>) -> Self {
+        let inv_transform = transform.inverse();
+        let inv_transp_transform = inv_transform.transpose();
         Self {
-            transform,
-            ..Default::default()
+            inv_transform,
+            inv_transp_transform,
         }
     }
 }
 
 impl Object for Sphere {
     fn intersect<'o>(&'o self, ray: &Ray) -> Intersections<'o> {
-        // TODO: store inverted transform
-        let ray = self.transform.inverse() * *ray;
-        let sphere_to_ray = ray.origin - self.center;
+        let ray = self.inv_transform * *ray;
+        let sphere_to_ray = ray.origin.as_vector();
         let a = ray.direction.dot(ray.direction);
         let b = 2.0 * ray.direction.dot(sphere_to_ray);
         let c = sphere_to_ray.dot(sphere_to_ray) - 1.0;
@@ -52,24 +50,33 @@ impl Object for Sphere {
         ));
         inters
     }
+
+    fn normal(&self, point: Tup) -> Tup {
+        let object_point = self.inv_transform * point;
+        let object_normal = object_point.as_vector();
+        let world_normal = self.inv_transp_transform * object_normal;
+        world_normal.as_vector().normalize()
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::Tup;
     use approx::*;
+    use std::f64::consts::PI;
 
     #[test]
     fn construct_sphere_default() {
         let s = Sphere::default();
-        assert_relative_eq!(s.transform, Mat::identity());
+        assert_relative_eq!(s.inv_transform, Mat::identity());
     }
 
     #[test]
     fn construct_sphere_with_transform() {
         let xf = Mat::identity().translate(1, 2, 3);
         let s = Sphere::with_transform(xf);
-        assert_relative_eq!(s.transform, xf);
+        assert_relative_eq!(s.inv_transform, xf.inverse());
     }
 
     #[test]
@@ -150,5 +157,40 @@ mod test {
         let xs = s.intersect(&r);
         let mut it = xs.iter();
         assert!(it.next().is_none());
+    }
+
+    #[test]
+    fn sphere_normal() {
+        let s = Sphere::default();
+
+        assert_relative_eq!(s.normal(Tup::point(1, 0, 0)), Tup::vector(1, 0, 0));
+        assert_relative_eq!(s.normal(Tup::point(0, 1, 0)), Tup::vector(0, 1, 0));
+        assert_relative_eq!(s.normal(Tup::point(0, 0, 1)), Tup::vector(0, 0, 1));
+        let rt3over3 = 3f64.sqrt() / 3.0;
+        assert_relative_eq!(
+            s.normal(Tup::point(rt3over3, rt3over3, rt3over3)),
+            Tup::vector(rt3over3, rt3over3, rt3over3)
+        );
+    }
+
+    #[test]
+    fn translated_sphere_normal() {
+        let s = Sphere::with_transform(Mat::identity().translate(0, 1, 0));
+
+        assert_relative_eq!(
+            s.normal(Tup::point(0, 1.7071067811865475, -0.7071067811865475)),
+            Tup::vector(0, 0.7071067811865475, -0.7071067811865475)
+        );
+    }
+
+    #[test]
+    fn transformed_sphere_normal() {
+        let s = Sphere::with_transform(Mat::identity().scale(1, 0.5, 1).rotate_y(PI / 5.0));
+
+        let rt2over2 = 2f64.sqrt() / 2.0;
+        assert_relative_eq!(
+            s.normal(Tup::point(0, rt2over2, -rt2over2)),
+            Tup::vector(0, 0.9701425001453319, -0.24253562503633302)
+        );
     }
 }
