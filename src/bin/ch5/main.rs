@@ -8,7 +8,8 @@ const WALL_SIZE: f64 = 7.0;
 fn main() {
     let mut c = Canvas::new(SIZE, SIZE);
 
-    let s = Sphere::with_transform(Mat::identity().scale(1.2, 0.8, 1).translate(0.1, 0, 0));
+    let s =
+        Sphere::default().with_transform(Mat::identity().scale(1.2, 0.8, 1).translate(0.1, 0, 0));
     let origin = Tup::point(0, 0, CAMERA_Z);
 
     for x in 0..SIZE {

@@ -1,9 +1,10 @@
-use crate::{Intersection, Intersections, Mat, Object, Ray, Tup};
+use crate::{Intersection, Intersections, Mat, Material, Object, Ray, Tup};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Sphere {
-    pub inv_transform: Mat<4>,
-    pub inv_transp_transform: Mat<4>,
+    inv_transform: Mat<4>,
+    inv_transp_transform: Mat<4>,
+    material: Material,
 }
 
 impl Default for Sphere {
@@ -11,18 +12,21 @@ impl Default for Sphere {
         Self {
             inv_transform: Mat::identity(),
             inv_transp_transform: Mat::identity(),
+            material: Material::default(),
         }
     }
 }
 
 impl Sphere {
-    pub fn with_transform(transform: Mat<4>) -> Self {
-        let inv_transform = transform.inverse();
-        let inv_transp_transform = inv_transform.transpose();
-        Self {
-            inv_transform,
-            inv_transp_transform,
-        }
+    pub fn with_transform(mut self, transform: Mat<4>) -> Self {
+        self.inv_transform = transform.inverse();
+        self.inv_transp_transform = self.inv_transform.transpose();
+        self
+    }
+
+    pub fn with_material(mut self, material: Material) -> Self {
+        self.material = material;
+        self
     }
 }
 
@@ -57,6 +61,10 @@ impl Object for Sphere {
         let world_normal = self.inv_transp_transform * object_normal;
         world_normal.as_vector().normalize()
     }
+
+    fn material(&self) -> &Material {
+        &self.material
+    }
 }
 
 #[cfg(test)]
@@ -70,13 +78,23 @@ mod test {
     fn construct_sphere_default() {
         let s = Sphere::default();
         assert_relative_eq!(s.inv_transform, Mat::identity());
+        assert_relative_eq!(s.material().ambient, 0.1);
     }
 
     #[test]
     fn construct_sphere_with_transform() {
         let xf = Mat::identity().translate(1, 2, 3);
-        let s = Sphere::with_transform(xf);
+        let s = Sphere::default().with_transform(xf);
         assert_relative_eq!(s.inv_transform, xf.inverse());
+    }
+
+    #[test]
+    fn construct_sphere_with_material() {
+        let s = Sphere::default().with_material(Material {
+            ambient: 29.0,
+            ..Default::default()
+        });
+        assert_relative_eq!(s.material.ambient, 29.0);
     }
 
     #[test]
@@ -140,7 +158,7 @@ mod test {
     #[test]
     fn ray_intersects_scaled_sphere() {
         let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
-        let s = Sphere::with_transform(Mat::identity().scale(2, 2, 2));
+        let s = Sphere::default().with_transform(Mat::identity().scale(2, 2, 2));
 
         let xs = s.intersect(&r);
         let mut it = xs.iter();
@@ -152,7 +170,7 @@ mod test {
     #[test]
     fn ray_intersects_translated_sphere() {
         let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
-        let s = Sphere::with_transform(Mat::identity().translate(5, 0, 0));
+        let s = Sphere::default().with_transform(Mat::identity().translate(5, 0, 0));
 
         let xs = s.intersect(&r);
         let mut it = xs.iter();
@@ -175,7 +193,7 @@ mod test {
 
     #[test]
     fn translated_sphere_normal() {
-        let s = Sphere::with_transform(Mat::identity().translate(0, 1, 0));
+        let s = Sphere::default().with_transform(Mat::identity().translate(0, 1, 0));
 
         assert_relative_eq!(
             s.normal(Tup::point(0, 1.7071067811865475, -0.7071067811865475)),
@@ -185,7 +203,8 @@ mod test {
 
     #[test]
     fn transformed_sphere_normal() {
-        let s = Sphere::with_transform(Mat::identity().scale(1, 0.5, 1).rotate_y(PI / 5.0));
+        let s =
+            Sphere::default().with_transform(Mat::identity().scale(1, 0.5, 1).rotate_y(PI / 5.0));
 
         let rt2over2 = 2f64.sqrt() / 2.0;
         assert_relative_eq!(

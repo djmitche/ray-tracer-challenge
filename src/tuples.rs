@@ -10,7 +10,8 @@ pub struct Tup {
     pub w: f64,
 }
 
-/// Tup represents a tuple.
+/// Tup represents a 4-tuple with labels x, y, z, and w.  Three-dimensional points and vectors are
+/// represented as 4-tuples with w values 1 and 0, respectively.
 impl Tup {
     /// Create a new tuple.
     pub fn new<X: Into<f64>, Y: Into<f64>, Z: Into<f64>, W: Into<f64>>(
@@ -93,17 +94,24 @@ impl Tup {
     }
 
     /// Compute the dot product of two tuples
-    pub fn dot(self, other: Self) -> f64 {
+    pub fn dot(&self, other: Self) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w
     }
 
     /// Compute the cross product of two tuples
-    pub fn cross(self, other: Self) -> Self {
+    pub fn cross(&self, other: Self) -> Self {
         Tup::vector(
             self.y * other.z - self.z * other.y,
             self.z * other.x - self.x * other.z,
             self.x * other.y - self.y * other.x,
         )
+    }
+
+    /// Reflect this vector to the opposite side of the given normal.
+    pub fn reflect(&self, normal: Tup) -> Self {
+        debug_assert!(self.is_vector());
+        debug_assert!(normal.is_vector());
+        *self - normal * 2.0 * self.dot(normal)
     }
 }
 
@@ -523,5 +531,19 @@ mod test {
         let a = Tup::vector(1, 2, 3);
         let b = Tup::vector(2, 3, 4);
         assert_relative_eq!(a.dot(b), 20.0);
+    }
+
+    #[test]
+    fn reflect_approaching_at_45() {
+        let v = Tup::vector(1, -1, 0);
+        let n = Tup::vector(0, 1, 0);
+        assert_relative_eq!(v.reflect(n), Tup::vector(1, 1, 0));
+    }
+
+    #[test]
+    fn reflect_slanted() {
+        let v = Tup::vector(0, -1, 0);
+        let n = Tup::vector(2f64.sqrt() / 2.0, 2f64.sqrt() / 2.0, 0);
+        assert_relative_eq!(v.reflect(n), Tup::vector(1, 0, 0));
     }
 }
