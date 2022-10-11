@@ -1,26 +1,21 @@
-mod tuples;
-pub use tuples::Tup;
-
-mod colors;
-pub use colors::Color;
-
 mod canvas;
-pub use canvas::Canvas;
-
-mod matrices;
-pub use matrices::Mat;
-
-mod ray;
-pub use ray::Ray;
-
-mod sphere;
-pub use sphere::Sphere;
-
-mod object;
-pub use object::*;
-
+mod colors;
 mod intersect;
-pub use intersect::*;
-
 mod light;
+mod matrices;
+mod object;
+mod ray;
+mod sphere;
+mod tuples;
+mod world;
+
+pub use canvas::Canvas;
+pub use colors::Color;
+pub use intersect::*;
 pub use light::*;
+pub use matrices::Mat;
+pub use object::*;
+pub use ray::Ray;
+pub use sphere::Sphere;
+pub use tuples::Tup;
+pub use world::*;

@@ -19,46 +19,49 @@ impl<'o> Intersection<'o> {
 
 /// Itersections maintains a mutable set of Intersection instances
 #[derive(Debug)]
-pub struct Intersections<'o>(Vec<Intersection<'o>>);
+pub struct Intersections<'o> {
+    hits: Vec<Intersection<'o>>,
+    sorted: bool,
+}
 
 impl Default for Intersections<'_> {
     fn default() -> Self {
-        Self(Vec::new())
+        Self {
+            hits: Vec::new(),
+            sorted: true,
+        }
     }
 }
 
 impl<'o> Intersections<'o> {
     /// Add a new intersection to this set.
     pub fn add(&mut self, inter: Intersection<'o>) {
-        self.0.push(inter)
+        self.hits.push(inter);
+        self.sorted = false;
     }
 
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.hits.len()
+    }
+
+    fn sort(&mut self) {
+        if !self.sorted {
+            self.hits
+                .sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap_or(std::cmp::Ordering::Equal));
+            self.sorted = true;
+        }
     }
 
     /// Get the nearest intersection
-    pub fn hit(&self) -> Option<&Intersection<'o>> {
-        return self.0.iter().fold(None, |acc, inter| {
-            if inter.t > 0.0 {
-                if let Some(Intersection { t, .. }) = acc {
-                    if *t < inter.t {
-                        acc
-                    } else {
-                        Some(inter)
-                    }
-                } else {
-                    Some(inter)
-                }
-            } else {
-                acc
-            }
-        });
+    pub fn hit(&mut self) -> Option<&Intersection<'o>> {
+        self.sort();
+        self.hits.iter().skip_while(|i| i.t < 0.0).nth(0)
     }
 
-    /// Get an iterator over all hits, in the order they were added.
-    pub fn iter(&self) -> std::slice::Iter<Intersection<'o>> {
-        self.0.iter()
+    /// Get an iterator over all hits, in order by `t`
+    pub fn iter(&mut self) -> std::slice::Iter<Intersection<'o>> {
+        self.sort();
+        self.hits.iter()
     }
 }
 

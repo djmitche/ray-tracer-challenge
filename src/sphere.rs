@@ -31,7 +31,7 @@ impl Sphere {
 }
 
 impl Object for Sphere {
-    fn intersect<'o>(&'o self, ray: &Ray) -> Intersections<'o> {
+    fn intersect<'o>(&'o self, ray: &Ray, inters: &mut Intersections<'o>) {
         let ray = self.inv_transform * *ray;
         let sphere_to_ray = ray.origin.as_vector();
         let a = ray.direction.dot(ray.direction);
@@ -39,20 +39,16 @@ impl Object for Sphere {
         let c = sphere_to_ray.dot(sphere_to_ray) - 1.0;
         let discriminant = b * b - 4.0 * a * c;
 
-        let mut inters = Intersections::default();
-        if discriminant < 0.0 {
-            return inters;
+        if discriminant >= 0.0 {
+            inters.add(Intersection::new(
+                (-b - discriminant.sqrt()) / (a * 2.0),
+                self,
+            ));
+            inters.add(Intersection::new(
+                (-b + discriminant.sqrt()) / (a * 2.0),
+                self,
+            ));
         }
-
-        inters.add(Intersection::new(
-            (-b - discriminant.sqrt()) / (a * 2.0),
-            self,
-        ));
-        inters.add(Intersection::new(
-            (-b + discriminant.sqrt()) / (a * 2.0),
-            self,
-        ));
-        inters
     }
 
     fn normal(&self, point: Tup) -> Tup {
@@ -102,7 +98,8 @@ mod test {
         let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
         let s = Sphere::default();
 
-        let xs = s.intersect(&r);
+        let mut xs = Intersections::default();
+        s.intersect(&r, &mut xs);
         let mut it = xs.iter();
         assert_relative_eq!(it.next().expect("intersection").t, 4.0);
         assert_relative_eq!(it.next().expect("intersection").t, 6.0);
@@ -114,7 +111,8 @@ mod test {
         let r = Ray::new(Tup::point(0, 1, -5), Tup::vector(0, 0, 1));
         let s = Sphere::default();
 
-        let xs = s.intersect(&r);
+        let mut xs = Intersections::default();
+        s.intersect(&r, &mut xs);
         let mut it = xs.iter();
         assert_relative_eq!(it.next().expect("intersection").t, 5.0);
         assert_relative_eq!(it.next().expect("intersection").t, 5.0);
@@ -126,7 +124,8 @@ mod test {
         let r = Ray::new(Tup::point(0, 2, -5), Tup::vector(0, 0, 1));
         let s = Sphere::default();
 
-        let xs = s.intersect(&r);
+        let mut xs = Intersections::default();
+        s.intersect(&r, &mut xs);
         let mut it = xs.iter();
         assert!(it.next().is_none());
     }
@@ -136,7 +135,8 @@ mod test {
         let r = Ray::new(Tup::point(0, 0, 0), Tup::vector(0, 0, 1));
         let s = Sphere::default();
 
-        let xs = s.intersect(&r);
+        let mut xs = Intersections::default();
+        s.intersect(&r, &mut xs);
         let mut it = xs.iter();
         assert_relative_eq!(it.next().expect("intersection").t, -1.0);
         assert_relative_eq!(it.next().expect("intersection").t, 1.0);
@@ -148,7 +148,8 @@ mod test {
         let r = Ray::new(Tup::point(0, 0, 5), Tup::vector(0, 0, 1));
         let s = Sphere::default();
 
-        let xs = s.intersect(&r);
+        let mut xs = Intersections::default();
+        s.intersect(&r, &mut xs);
         let mut it = xs.iter();
         assert_relative_eq!(it.next().expect("intersection").t, -6.0);
         assert_relative_eq!(it.next().expect("intersection").t, -4.0);
@@ -160,7 +161,8 @@ mod test {
         let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
         let s = Sphere::default().with_transform(Mat::identity().scale(2, 2, 2));
 
-        let xs = s.intersect(&r);
+        let mut xs = Intersections::default();
+        s.intersect(&r, &mut xs);
         let mut it = xs.iter();
         assert_relative_eq!(it.next().expect("intersection").t, 3.0);
         assert_relative_eq!(it.next().expect("intersection").t, 7.0);
@@ -172,7 +174,8 @@ mod test {
         let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
         let s = Sphere::default().with_transform(Mat::identity().translate(5, 0, 0));
 
-        let xs = s.intersect(&r);
+        let mut xs = Intersections::default();
+        s.intersect(&r, &mut xs);
         let mut it = xs.iter();
         assert!(it.next().is_none());
     }

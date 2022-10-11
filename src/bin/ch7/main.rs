@@ -8,12 +8,35 @@ const WALL_SIZE: f64 = 7.0;
 fn main() {
     let mut c = Canvas::new(SIZE, SIZE);
 
-    let s = Sphere::default()
-        .with_transform(Mat::identity().scale(0.75, 0.8, 1))
-        .with_material(Material {
-            color: Color::new(1, 0.2, 1),
-            ..Default::default()
-        });
+    let mut world = World::default();
+    world.add(Box::new(
+        Sphere::default()
+            .with_transform(Mat::identity().scale(0.75, 0.8, 1))
+            .with_material(Material {
+                color: Color::new(1, 0.2, 1),
+                ..Default::default()
+            }),
+    ));
+    world.add(Box::new(
+        Sphere::default()
+            .with_transform(Mat::identity().scale(0.5, 0.5, 0.5).translate(-0.75, 0, 0))
+            .with_material(Material {
+                color: Color::new(0.3, 0.8, 0.1),
+                ..Default::default()
+            }),
+    ));
+    world.add(Box::new(
+        Sphere::default()
+            .with_transform(
+                Mat::identity()
+                    .scale(0.5, 0.5, 0.5)
+                    .translate(0.75, 0, -0.9),
+            )
+            .with_material(Material {
+                color: Color::new(0.3, 0.8, 0.1),
+                ..Default::default()
+            }),
+    ));
     let origin = Tup::point(0, 0, CAMERA_Z);
 
     let light = Light::new_point(Tup::point(-10, 10, -10), Color::white());
@@ -26,7 +49,7 @@ fn main() {
             let ray = Ray::new(origin, (wall_pt - origin).normalize());
 
             let mut inters = Intersections::default();
-            s.intersect(&ray, &mut inters);
+            world.intersect(&ray, &mut inters);
             if let Some(inter) = inters.hit() {
                 let hit_pt = ray.position(inter.t);
                 let normal = inter.obj.normal(hit_pt);
@@ -38,6 +61,6 @@ fn main() {
         }
     }
 
-    c.write_ppm_file("/tmp/ch6.ppm")
+    c.write_ppm_file("/tmp/ch7.ppm")
         .expect("could not write PPM file");
 }

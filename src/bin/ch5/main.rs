@@ -19,7 +19,9 @@ fn main() {
             let position = Tup::point(wall_x, wall_y, WALL_Z);
             let r = Ray::new(origin, (position - origin).normalize());
 
-            if let Some(inter) = s.intersect(&r).hit() {
+            let mut inters = Intersections::default();
+            s.intersect(&r, &mut inters);
+            if let Some(inter) = inters.hit() {
                 c[(x, y)] = Color::new((inter.t - 4.0) * 2.0, 1.0, 0);
             } else {
                 c[(x, y)] = Color::new(0, 0, 1);
