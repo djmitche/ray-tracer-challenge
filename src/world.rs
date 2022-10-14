@@ -1,4 +1,4 @@
-use crate::{shade_hit, Color, Comps, Intersections, Light, Object, Ray, Tup};
+use crate::{Color, Intersection, Intersections, Light, Object, Ray, Tup};
 
 #[derive(Debug)]
 pub struct World {
@@ -45,12 +45,26 @@ impl World {
         w
     }
 
+    /// Precompute the point of intersection, the eye vector, and the normal vector
+    /// fr the given hit of the given ray.
+    fn precompute(hit: &Intersection, ray: &Ray) -> (Tup, Tup, Tup) {
+        let point = ray.position(hit.t);
+        let eyev = -ray.direction;
+        let mut normalv = hit.obj.normal(point);
+        if normalv.dot(eyev) < 0.0 {
+            // use the inside surface, with the opposite normal
+            normalv = -normalv;
+        }
+        (point, eyev, normalv)
+    }
+
     pub fn color_at(&self, ray: &Ray) -> Color {
         let mut inters = Intersections::default();
         self.intersect(ray, &mut inters);
         if let Some(hit) = inters.hit() {
-            let comps = Comps::prepare(hit, ray);
-            shade_hit(&self, &comps)
+            let (point, eyev, normalv) = Self::precompute(hit, ray);
+            self.light
+                .lighting(hit.obj.material(), point, eyev, normalv)
         } else {
             Color::black()
         }
@@ -62,6 +76,48 @@ mod test {
     use super::*;
     use crate::*;
     use approx::*;
+
+    #[test]
+    fn precompute_state() {
+        let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
+        let shape = Sphere::default();
+        let i = Intersection {
+            obj: &shape,
+            t: 4.0,
+        };
+
+        let (point, eyev, normalv) = World::precompute(&i, &r);
+        assert_relative_eq!(point, Tup::point(0, 0, -1));
+        assert_relative_eq!(eyev, Tup::vector(0, 0, -1));
+        assert_relative_eq!(normalv, Tup::vector(0, 0, -1));
+    }
+
+    #[test]
+    fn precompute_state_inside() {
+        let r = Ray::new(Tup::point(0, 0, 0), Tup::vector(0, 0, 1));
+        let shape = Sphere::default();
+        let i = Intersection {
+            obj: &shape,
+            t: 1.0,
+        };
+
+        let (point, eyev, normalv) = World::precompute(&i, &r);
+        assert_relative_eq!(point, Tup::point(0, 0, 1));
+        assert_relative_eq!(eyev, Tup::vector(0, 0, -1));
+        assert_relative_eq!(normalv, Tup::vector(0, 0, -1));
+    }
+
+    #[test]
+    fn shade_intersection_inside() {
+        let mut w = World::test_world();
+        w.light = Light::new_point(Tup::point(0, 0.25, 0), Color::white());
+        let r = Ray::new(Tup::point(0, 0, 0), Tup::vector(0, 0, 1));
+        let c = w.color_at(&r);
+        assert_relative_eq!(
+            c,
+            Color::new(0.9049844720832575, 0.9049844720832575, 0.9049844720832575)
+        );
+    }
 
     #[test]
     fn intersect_world_with_ray() {
