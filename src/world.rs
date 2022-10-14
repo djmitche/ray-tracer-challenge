@@ -1,4 +1,4 @@
-use crate::{Color, Intersections, Light, Object, Ray, Tup};
+use crate::{Color, Intersections, Light, Mat, Material, Object, Ray, Sphere, Tup};
 
 #[derive(Debug)]
 pub struct World {
@@ -25,15 +25,10 @@ impl World {
             o.intersect(ray, inters);
         }
     }
-}
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::*;
-    use approx::*;
-
-    fn default_world() -> World {
+    /// Create the "default_world" from the tests.
+    #[cfg(test)]
+    pub(crate) fn test_world() -> Self {
         let mut w = World::default();
         w.add(Box::new(Sphere::default().with_material(Material {
             color: Color::new(0.8, 1.0, 0.6),
@@ -48,10 +43,17 @@ mod test {
         ));
         w
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::*;
+    use approx::*;
 
     #[test]
     fn intersect_world_with_ray() {
-        let w = default_world();
+        let w = World::test_world();
         let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
         let mut inters = Intersections::default();
         w.intersect(&r, &mut inters);

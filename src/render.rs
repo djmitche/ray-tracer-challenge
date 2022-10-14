@@ -1,4 +1,4 @@
-use crate::{Intersection, Object, Ray, Tup};
+use crate::{Color, Intersection, Object, Ray, Tup, World};
 
 pub struct Comps<'o> {
     /// True if the eye is looking from inside the shape
@@ -43,10 +43,16 @@ impl<'o> Comps<'o> {
     }
 }
 
+pub fn shade_hit(world: &World, comps: &Comps) -> Color {
+    world
+        .light
+        .lighting(comps.obj.material(), comps.point, comps.eyev, comps.normalv)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::Sphere;
+    use crate::{Intersections, Light, Mat, Material, Sphere};
     use approx::*;
 
     #[test]
@@ -81,5 +87,45 @@ mod test {
         assert_relative_eq!(comps.point, Tup::point(0, 0, 1));
         assert_relative_eq!(comps.eyev, Tup::vector(0, 0, -1));
         assert_relative_eq!(comps.normalv, Tup::vector(0, 0, -1));
+    }
+
+    #[test]
+    fn shade_intersection() {
+        let w = World::test_world();
+        let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
+
+        let mut inters = Intersections::default();
+        w.intersect(&r, &mut inters);
+        let i = *inters.hit().unwrap();
+
+        let comps = Comps::prepare(&i, &r);
+        let c = shade_hit(&w, &comps);
+        assert_relative_eq!(
+            c,
+            Color::new(
+                0.38066119308103435,
+                0.47582649135129296,
+                0.28549589481077575
+            )
+        );
+    }
+
+    #[test]
+    fn shade_intersection_inside() {
+        let mut w = World::test_world();
+        w.light = Light::new_point(Tup::point(0, 0.25, 0), Color::white());
+        let r = Ray::new(Tup::point(0, 0, 0), Tup::vector(0, 0, 1));
+
+        let s = Sphere::default()
+            .with_transform(Mat::identity().scale(0.5, 0.5, 0.5))
+            .with_material(Material::default());
+        let i = Intersection { t: 0.5, obj: &s };
+
+        let comps = Comps::prepare(&i, &r);
+        let c = shade_hit(&w, &comps);
+        assert_relative_eq!(
+            c,
+            Color::new(0.9049844720832575, 0.9049844720832575, 0.9049844720832575)
+        );
     }
 }
