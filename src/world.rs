@@ -20,12 +20,6 @@ impl World {
         self.objects.push(obj);
     }
 
-    pub fn intersect<'o>(&'o self, ray: &Ray, inters: &mut Intersections<'o>) {
-        for o in &self.objects {
-            o.intersect(ray, inters);
-        }
-    }
-
     /// Create the "default_world" from the tests.
     #[cfg(test)]
     pub(crate) fn test_world() -> Self {
@@ -45,6 +39,13 @@ impl World {
         w
     }
 
+    /// Intersect the given ray with all objects in the world.
+    fn intersect<'o>(&'o self, ray: &Ray, inters: &mut Intersections<'o>) {
+        for o in &self.objects {
+            o.intersect(ray, inters);
+        }
+    }
+
     /// Precompute the point of intersection, the eye vector, and the normal vector
     /// fr the given hit of the given ray.
     fn precompute(hit: &Intersection, ray: &Ray) -> (Tup, Tup, Tup) {
@@ -58,6 +59,7 @@ impl World {
         (point, eyev, normalv)
     }
 
+    /// Determine the color received by an eye at the origin of the given ray.
     pub fn color_at(&self, ray: &Ray) -> Color {
         let mut inters = Intersections::default();
         self.intersect(ray, &mut inters);
