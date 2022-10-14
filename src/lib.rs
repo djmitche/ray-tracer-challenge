@@ -1,3 +1,4 @@
+mod camera;
 mod canvas;
 mod colors;
 mod intersect;
@@ -10,12 +11,13 @@ mod sphere;
 mod tuples;
 mod world;
 
+pub use camera::*;
 pub use canvas::Canvas;
 pub use colors::Color;
 pub use intersect::*;
 pub use light::*;
 pub use material::*;
-pub use matrices::Mat;
+pub use matrices::*;
 pub use object::*;
 pub use ray::Ray;
 pub use sphere::Sphere;
