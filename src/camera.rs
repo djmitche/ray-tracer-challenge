@@ -1,17 +1,10 @@
-use crate::{mat4, Mat, Ray, Tup};
+use crate::{mat4, Color, Mat, Ray, Tup, World};
 
 /// Camera represents a view onto the world space.
 ///
 /// The "image" is assumed to be a rectangle centered on a point one unit
 /// in front of the eye.
 pub struct Camera {
-    /// number of horizontal pixels in image
-    hsize: usize,
-    /// number of vertical pixels in image
-    vsize: usize,
-    /// field of view, in radians
-    fov: f64,
-
     /// matrix translating camera coordinates to world coordinates
     inv_transform: Mat<4>,
 
@@ -36,9 +29,6 @@ impl Camera {
         };
         let pixel_size = (half_width * 2.0 / hsize as f64) as f64;
         Self {
-            hsize,
-            vsize,
-            fov,
             inv_transform: Self::view_transform(from, to, up).inverse(),
             pixel_size,
             half_width,
@@ -63,7 +53,7 @@ impl Camera {
         ]
     }
 
-    pub fn ray_for_pixel(&self, x: usize, y: usize) -> Ray {
+    fn ray_for_pixel(&self, x: usize, y: usize) -> Ray {
         // offset from edge of image to the _center_ of the pixel
         let xoffset = (x as f64 + 0.5) * self.pixel_size;
         let yoffset = (y as f64 + 0.5) * self.pixel_size;
@@ -77,6 +67,11 @@ impl Camera {
         let direction = (pixel - origin).normalize();
 
         Ray::new(origin, direction)
+    }
+
+    pub fn color_at(&self, x: usize, y: usize, world: &World) -> Color {
+        let ray = self.ray_for_pixel(x, y);
+        world.color_at(&ray)
     }
 }
 
@@ -149,9 +144,9 @@ mod test {
             Tup::point(0, 0, -1),
             Tup::vector(0, 1, 0),
         );
-        assert_eq!(cam.hsize, 160);
-        assert_eq!(cam.vsize, 120);
-        assert_relative_eq!(cam.fov, PI / 2.0);
+        //assert_eq!(cam.hsize, 160);
+        //assert_eq!(cam.vsize, 120);
+        //assert_relative_eq!(cam.fov, PI / 2.0);
         assert_relative_eq!(cam.inv_transform, Mat::identity());
     }
 
