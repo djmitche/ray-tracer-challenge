@@ -1,4 +1,4 @@
-use crate::{mat4, spaces, Color, Mat, Ray, Tup, World};
+use crate::{mat4, spaces, Color, Mat, Point, Ray, Vector, World};
 
 /// Camera represents a view onto the world space.
 ///
@@ -29,9 +29,9 @@ impl Camera {
         hsize: usize,
         vsize: usize,
         fov: f64,
-        from: Tup<spaces::World>,
-        to: Tup<spaces::World>,
-        up: Tup<spaces::World>,
+        from: Point<spaces::World>,
+        to: Point<spaces::World>,
+        up: Vector<spaces::World>,
     ) -> Self {
         let half_view = (fov / 2.0).tan();
         let aspect = hsize as f64 / vsize as f64;
@@ -52,9 +52,9 @@ impl Camera {
     }
 
     fn view_transform(
-        from: Tup<spaces::World>,
-        to: Tup<spaces::World>,
-        up: Tup<spaces::World>,
+        from: Point<spaces::World>,
+        to: Point<spaces::World>,
+        up: Vector<spaces::World>,
     ) -> Mat<4, spaces::World, spaces::Camera> {
         let forward = (to - from).normalize();
         let left = forward.cross(up.normalize());
@@ -84,8 +84,8 @@ impl Camera {
         let world_x = self.half_width - xoffset;
         let world_y = self.half_height - yoffset;
 
-        let pixel = self.inv_transform * Tup::point(world_x, world_y, -1);
-        let origin = self.inv_transform * Tup::point(0, 0, 0);
+        let pixel = self.inv_transform * Point::new(world_x, world_y, -1);
+        let origin = self.inv_transform * Point::new(0, 0, 0);
         let direction = (pixel - origin).normalize();
 
         Ray::new(origin, direction)
@@ -147,9 +147,9 @@ mod test {
     fn view_transform_default_orientation() {
         assert_relative_eq!(
             Camera::view_transform(
-                Tup::point(0, 0, 0),
-                Tup::point(0, 0, -1),
-                Tup::vector(0, 1, 0)
+                Point::new(0, 0, 0),
+                Point::new(0, 0, -1),
+                Vector::new(0, 1, 0)
             ),
             Mat::identity()
         );
@@ -159,9 +159,9 @@ mod test {
     fn view_transform_pos_z() {
         assert_relative_eq!(
             Camera::view_transform(
-                Tup::point(0, 0, 0),
-                Tup::point(0, 0, 1),
-                Tup::vector(0, 1, 0)
+                Point::new(0, 0, 0),
+                Point::new(0, 0, 1),
+                Vector::new(0, 1, 0)
             ),
             Mat::identity().scale(-1, 1, -1)
         );
@@ -171,9 +171,9 @@ mod test {
     fn view_transform_moves_world() {
         assert_relative_eq!(
             Camera::view_transform(
-                Tup::point(0, 0, 8),
-                Tup::point(0, 0, 0),
-                Tup::vector(0, 1, 0)
+                Point::new(0, 0, 8),
+                Point::new(0, 0, 0),
+                Vector::new(0, 1, 0)
             ),
             Mat::identity().translate(0, 0, -8)
         );
@@ -183,9 +183,9 @@ mod test {
     fn view_transform_arbitrary() {
         assert_relative_eq!(
             Camera::view_transform(
-                Tup::point(1, 3, 2),
-                Tup::point(4, -2, 8),
-                Tup::vector(1, 1, 0)
+                Point::new(1, 3, 2),
+                Point::new(4, -2, 8),
+                Vector::new(1, 1, 0)
             ),
             mat4![
             -0.5070925528371099,  0.5070925528371099, 0.6761234037828132,  -2.366431913239846;
@@ -202,9 +202,9 @@ mod test {
             160,
             120,
             PI / 2.0,
-            Tup::point(0, 0, 0),
-            Tup::point(0, 0, -1),
-            Tup::vector(0, 1, 0),
+            Point::new(0, 0, 0),
+            Point::new(0, 0, -1),
+            Vector::new(0, 1, 0),
         );
         //assert_eq!(cam.hsize, 160);
         //assert_eq!(cam.vsize, 120);
@@ -218,9 +218,9 @@ mod test {
             200,
             125,
             PI / 2.0,
-            Tup::point(0, 0, 0),
-            Tup::point(0, 0, -1),
-            Tup::vector(0, 1, 0),
+            Point::new(0, 0, 0),
+            Point::new(0, 0, -1),
+            Vector::new(0, 1, 0),
         );
         assert_relative_eq!(cam.pixel_size, 0.01);
     }
@@ -231,9 +231,9 @@ mod test {
             125,
             200,
             PI / 2.0,
-            Tup::point(0, 0, 0),
-            Tup::point(0, 0, -1),
-            Tup::vector(0, 1, 0),
+            Point::new(0, 0, 0),
+            Point::new(0, 0, -1),
+            Vector::new(0, 1, 0),
         );
         assert_relative_eq!(cam.pixel_size, 0.01);
     }
@@ -244,13 +244,13 @@ mod test {
             201,
             101,
             PI / 2.0,
-            Tup::point(0, 0, 0),
-            Tup::point(0, 0, -1),
-            Tup::vector(0, 1, 0),
+            Point::new(0, 0, 0),
+            Point::new(0, 0, -1),
+            Vector::new(0, 1, 0),
         );
         let r = cam.ray_for_pixel(100, 50);
-        assert_relative_eq!(r.origin, Tup::point(0, 0, 0));
-        assert_relative_eq!(r.direction, Tup::vector(0, 0, -1));
+        assert_relative_eq!(r.origin, Point::new(0, 0, 0));
+        assert_relative_eq!(r.direction, Vector::new(0, 0, -1));
     }
 
     #[test]
@@ -259,15 +259,15 @@ mod test {
             201,
             101,
             PI / 2.0,
-            Tup::point(0, 0, 0),
-            Tup::point(0, 0, -1),
-            Tup::vector(0, 1, 0),
+            Point::new(0, 0, 0),
+            Point::new(0, 0, -1),
+            Vector::new(0, 1, 0),
         );
         let r = cam.ray_for_pixel(0, 0);
-        assert_relative_eq!(r.origin, Tup::point(0, 0, 0));
+        assert_relative_eq!(r.origin, Point::new(0, 0, 0));
         assert_relative_eq!(
             r.direction,
-            Tup::vector(0.6651864261194508, 0.3325932130597254, -0.6685123582500481)
+            Vector::new(0.6651864261194508, 0.3325932130597254, -0.6685123582500481)
         );
     }
 
@@ -278,18 +278,18 @@ mod test {
             201,
             101,
             PI / 2.0,
-            Tup::point(0, 2, -5),
-            Tup::point(halfsqrt2, 2, -halfsqrt2 - 5.0),
-            Tup::vector(0, 1, 0),
+            Point::new(0, 2, -5),
+            Point::new(halfsqrt2, 2, -halfsqrt2 - 5.0),
+            Vector::new(0, 1, 0),
         );
         let r = cam.ray_for_pixel(100, 50);
-        assert_relative_eq!(r.origin, Tup::point(0, 2, -5));
+        assert_relative_eq!(r.origin, Point::new(0, 2, -5));
         // the math here doesn't quite work out to the level of precision
         // expected by assert_relative_eq's default epsilon
         assert!(Relative {
             epsilon: 0.00001,
             max_relative: 0.00001,
         }
-        .eq(&r.direction, &Tup::vector(halfsqrt2, 0, -halfsqrt2)));
+        .eq(&r.direction, &Vector::new(halfsqrt2, 0, -halfsqrt2)));
     }
 }

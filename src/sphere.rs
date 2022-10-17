@@ -1,4 +1,4 @@
-use crate::{spaces, Intersection, Intersections, Mat, Material, Object, Ray, Tup};
+use crate::{spaces, Intersection, Intersections, Mat, Material, Object, Point, Ray, Vector};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Sphere {
@@ -51,11 +51,11 @@ impl Object for Sphere {
         }
     }
 
-    fn normal(&self, point: Tup<spaces::World>) -> Tup<spaces::World> {
+    fn normal(&self, point: Point<spaces::World>) -> Vector<spaces::World> {
         let object_point = self.inv_transform * point;
         let object_normal = object_point.as_vector();
         let world_normal = self.inv_transp_transform * object_normal;
-        world_normal.as_vector().normalize()
+        world_normal.normalize()
     }
 
     fn material(&self) -> &Material {
@@ -66,7 +66,6 @@ impl Object for Sphere {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::Tup;
     use approx::*;
     use std::f64::consts::PI;
 
@@ -95,7 +94,7 @@ mod test {
 
     #[test]
     fn ray_intersects_sphere() {
-        let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
+        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
         let s = Sphere::default();
 
         let mut xs = Intersections::default();
@@ -108,7 +107,7 @@ mod test {
 
     #[test]
     fn ray_intersects_sphere_one_point() {
-        let r = Ray::new(Tup::point(0, 1, -5), Tup::vector(0, 0, 1));
+        let r = Ray::new(Point::new(0, 1, -5), Vector::new(0, 0, 1));
         let s = Sphere::default();
 
         let mut xs = Intersections::default();
@@ -121,7 +120,7 @@ mod test {
 
     #[test]
     fn ray_intersects_sphere_zero_points() {
-        let r = Ray::new(Tup::point(0, 2, -5), Tup::vector(0, 0, 1));
+        let r = Ray::new(Point::new(0, 2, -5), Vector::new(0, 0, 1));
         let s = Sphere::default();
 
         let mut xs = Intersections::default();
@@ -132,7 +131,7 @@ mod test {
 
     #[test]
     fn ray_origin_in_sphere() {
-        let r = Ray::new(Tup::point(0, 0, 0), Tup::vector(0, 0, 1));
+        let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
         let s = Sphere::default();
 
         let mut xs = Intersections::default();
@@ -145,7 +144,7 @@ mod test {
 
     #[test]
     fn sphere_behind_ray() {
-        let r = Ray::new(Tup::point(0, 0, 5), Tup::vector(0, 0, 1));
+        let r = Ray::new(Point::new(0, 0, 5), Vector::new(0, 0, 1));
         let s = Sphere::default();
 
         let mut xs = Intersections::default();
@@ -158,7 +157,7 @@ mod test {
 
     #[test]
     fn ray_intersects_scaled_sphere() {
-        let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
+        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
         let s = Sphere::default().with_transform(Mat::identity().scale(2, 2, 2));
 
         let mut xs = Intersections::default();
@@ -171,7 +170,7 @@ mod test {
 
     #[test]
     fn ray_intersects_translated_sphere() {
-        let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
+        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
         let s = Sphere::default().with_transform(Mat::identity().translate(5, 0, 0));
 
         let mut xs = Intersections::default();
@@ -184,13 +183,13 @@ mod test {
     fn sphere_normal() {
         let s = Sphere::default();
 
-        assert_relative_eq!(s.normal(Tup::point(1, 0, 0)), Tup::vector(1, 0, 0));
-        assert_relative_eq!(s.normal(Tup::point(0, 1, 0)), Tup::vector(0, 1, 0));
-        assert_relative_eq!(s.normal(Tup::point(0, 0, 1)), Tup::vector(0, 0, 1));
+        assert_relative_eq!(s.normal(Point::new(1, 0, 0)), Vector::new(1, 0, 0));
+        assert_relative_eq!(s.normal(Point::new(0, 1, 0)), Vector::new(0, 1, 0));
+        assert_relative_eq!(s.normal(Point::new(0, 0, 1)), Vector::new(0, 0, 1));
         let rt3over3 = 3f64.sqrt() / 3.0;
         assert_relative_eq!(
-            s.normal(Tup::point(rt3over3, rt3over3, rt3over3)),
-            Tup::vector(rt3over3, rt3over3, rt3over3)
+            s.normal(Point::new(rt3over3, rt3over3, rt3over3)),
+            Vector::new(rt3over3, rt3over3, rt3over3)
         );
     }
 
@@ -199,8 +198,8 @@ mod test {
         let s = Sphere::default().with_transform(Mat::identity().translate(0, 1, 0));
 
         assert_relative_eq!(
-            s.normal(Tup::point(0, 1.7071067811865475, -0.7071067811865475)),
-            Tup::vector(0, 0.7071067811865475, -0.7071067811865475)
+            s.normal(Point::new(0, 1.7071067811865475, -0.7071067811865475)),
+            Vector::new(0, 0.7071067811865475, -0.7071067811865475)
         );
     }
 
@@ -211,8 +210,8 @@ mod test {
 
         let rt2over2 = 2f64.sqrt() / 2.0;
         assert_relative_eq!(
-            s.normal(Tup::point(0, rt2over2, -rt2over2)),
-            Tup::vector(0, 0.9701425001453319, -0.24253562503633302)
+            s.normal(Point::new(0, rt2over2, -rt2over2)),
+            Vector::new(0, 0.9701425001453319, -0.24253562503633302)
         );
     }
 }

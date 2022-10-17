@@ -1,4 +1,4 @@
-use crate::{Point, Space, Tup, Vector};
+use crate::{Point, Space, Vector};
 use approx::{AbsDiffEq, RelativeEq};
 use std::marker::PhantomData;
 
@@ -347,21 +347,6 @@ impl<const N: usize, S1: Space, S2: Space, S3: Space> std::ops::Mul<Mat<N, S1, S
     }
 }
 
-impl<S1: Space, S2: Space> std::ops::Mul<Tup<S1>> for Mat<4, S1, S2> {
-    type Output = Tup<S2>;
-    fn mul(self, other: Tup<S1>) -> Tup<S2> {
-        let mut res = Tup::default();
-        for i in 0..4 {
-            let mut v = 0.0;
-            for k in 0..4 {
-                v += self[(i, k)] * other[k];
-            }
-            res[i] = v;
-        }
-        res
-    }
-}
-
 impl<S1: Space, S2: Space> std::ops::Mul<Vector<S1>> for Mat<4, S1, S2> {
     type Output = Vector<S2>;
     fn mul(self, other: Vector<S1>) -> Vector<S2> {
@@ -497,20 +482,6 @@ mod test {
             40, 58, 110, 102;
             16, 26, 46, 42;
         ];
-        assert_relative_eq!(a * b, res);
-    }
-
-    /// A matrix multiplied by a tuple.
-    #[test]
-    fn multiply_tup() {
-        let a: Mat<4, spaces::Camera, spaces::World> = mat4![
-            1, 2, 3, 4;
-            2, 4, 4, 2;
-            8, 6, 4, 1;
-            0, 0, 0, 1;
-        ];
-        let b: Tup<spaces::Camera> = Tup::new(1, 2, 3, 1);
-        let res: Tup<spaces::World> = Tup::new(18, 24, 33, 1);
         assert_relative_eq!(a * b, res);
     }
 

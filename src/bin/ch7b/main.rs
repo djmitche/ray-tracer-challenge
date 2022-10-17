@@ -8,7 +8,7 @@ fn main() {
     let mut canvas = Canvas::new(SIZE, SIZE);
 
     let mut world = World::default();
-    world.light = Light::new_point(Tup::point(-10, 10, -10), Color::new(1, 1, 1));
+    world.light = Light::new_point(Point::new(-10, 10, -10), Color::new(1, 1, 1));
 
     // floor
     world.add(Box::new(
@@ -100,9 +100,9 @@ fn main() {
         SIZE,
         SIZE,
         PI / 3.0,
-        Tup::point(0, 1.9, -5),
-        Tup::point(0, 1, 0),
-        Tup::vector(0, 1, 0),
+        Point::new(0, 1.9, -5),
+        Point::new(0, 1, 0),
+        Vector::new(0, 1, 0),
     );
 
     let camref = &camera;

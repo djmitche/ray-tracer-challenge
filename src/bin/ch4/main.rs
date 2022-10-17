@@ -10,7 +10,7 @@ fn main() {
             .scale(45, 45, 0)
             .translate(50, 50, 0);
 
-        let p = m * Tup::point(0, 1, 0);
+        let p = m * Point::new(0, 1, 0);
         c[(p.x as usize, p.y as usize)] = Color::new(1, 1, 1);
     }
 

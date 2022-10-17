@@ -10,13 +10,13 @@ fn main() {
 
     let s =
         Sphere::default().with_transform(Mat::identity().scale(1.2, 0.8, 1).translate(0.1, 0, 0));
-    let origin = Tup::point(0, 0, CAMERA_Z);
+    let origin = Point::new(0, 0, CAMERA_Z);
 
     for x in 0..SIZE {
         let wall_x = (x as f64 / SIZE as f64) * WALL_SIZE - WALL_SIZE / 2.0;
         for y in 0..SIZE {
             let wall_y = (y as f64 / SIZE as f64) * WALL_SIZE - WALL_SIZE / 2.0;
-            let position = Tup::point(wall_x, wall_y, WALL_Z);
+            let position = Point::new(wall_x, wall_y, WALL_Z);
             let r = Ray::new(origin, (position - origin).normalize());
 
             let mut inters = Intersections::default();

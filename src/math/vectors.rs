@@ -1,5 +1,5 @@
 use super::{Point, Space};
-use approx::{relative_eq, AbsDiffEq, RelativeEq};
+use approx::{AbsDiffEq, RelativeEq};
 use std::marker::PhantomData;
 
 /// Vector represents a location in the given space.
@@ -65,34 +65,6 @@ impl<S: Space> Vector<S> {
         *self - normal * 2.0 * self.dot(normal)
     }
 }
-
-/*
-impl<S: Space> std::ops::Index<usize> for Vector<S> {
-    type Output = f64;
-
-    fn index(&self, idx: usize) -> &Self::Output {
-        match idx {
-            0 => &self.x,
-            1 => &self.y,
-            2 => &self.z,
-            3 => &0.0,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl<S: Space> std::ops::IndexMut<usize> for Vector<S> {
-    fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
-        match idx {
-            0 => &mut self.x,
-            1 => &mut self.y,
-            2 => &mut self.z,
-            3 => panic!("cannot modify w coordinate of a point"),
-            _ => unreachable!(),
-        }
-    }
-}
-*/
 
 impl<S: Space> AbsDiffEq for Vector<S> {
     type Epsilon = <f64 as AbsDiffEq>::Epsilon;

@@ -1,4 +1,4 @@
-use crate::{spaces, Color, Intersection, Intersections, Light, Object, Ray, Tup};
+use crate::{spaces, Color, Intersection, Intersections, Light, Object, Point, Ray, Vector};
 
 #[derive(Debug)]
 pub struct World {
@@ -9,7 +9,7 @@ pub struct World {
 impl Default for World {
     fn default() -> Self {
         Self {
-            light: Light::new_point(Tup::point(-10, 10, -10), Color::white()),
+            light: Light::new_point(Point::new(-10, 10, -10), Color::white()),
             objects: vec![],
         }
     }
@@ -51,7 +51,11 @@ impl World {
     fn precompute(
         hit: &Intersection,
         ray: &Ray<spaces::World>,
-    ) -> (Tup<spaces::World>, Tup<spaces::World>, Tup<spaces::World>) {
+    ) -> (
+        Point<spaces::World>,
+        Vector<spaces::World>,
+        Vector<spaces::World>,
+    ) {
         let point = ray.position(hit.t);
         let eyev = -ray.direction;
         let mut normalv = hit.obj.normal(point);
@@ -62,7 +66,7 @@ impl World {
         (point, eyev, normalv)
     }
 
-    fn point_is_shadowed(&self, point: Tup<spaces::World>) -> bool {
+    fn point_is_shadowed(&self, point: Point<spaces::World>) -> bool {
         let to_light = self.light.position - point;
         let to_light_norm = to_light.normalize();
         // move 0.01 along the ray to escape the object on which point
@@ -105,7 +109,7 @@ mod test {
 
     #[test]
     fn precompute_state() {
-        let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
+        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
         let shape = Sphere::default();
         let i = Intersection {
             obj: &shape,
@@ -113,14 +117,14 @@ mod test {
         };
 
         let (point, eyev, normalv) = World::precompute(&i, &r);
-        assert_relative_eq!(point, Tup::point(0, 0, -1));
-        assert_relative_eq!(eyev, Tup::vector(0, 0, -1));
-        assert_relative_eq!(normalv, Tup::vector(0, 0, -1));
+        assert_relative_eq!(point, Point::new(0, 0, -1));
+        assert_relative_eq!(eyev, Vector::new(0, 0, -1));
+        assert_relative_eq!(normalv, Vector::new(0, 0, -1));
     }
 
     #[test]
     fn precompute_state_inside() {
-        let r = Ray::new(Tup::point(0, 0, 0), Tup::vector(0, 0, 1));
+        let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
         let shape = Sphere::default();
         let i = Intersection {
             obj: &shape,
@@ -128,16 +132,16 @@ mod test {
         };
 
         let (point, eyev, normalv) = World::precompute(&i, &r);
-        assert_relative_eq!(point, Tup::point(0, 0, 1));
-        assert_relative_eq!(eyev, Tup::vector(0, 0, -1));
-        assert_relative_eq!(normalv, Tup::vector(0, 0, -1));
+        assert_relative_eq!(point, Point::new(0, 0, 1));
+        assert_relative_eq!(eyev, Vector::new(0, 0, -1));
+        assert_relative_eq!(normalv, Vector::new(0, 0, -1));
     }
 
     #[test]
     fn shade_intersection_inside() {
         let mut w = World::test_world();
-        w.light = Light::new_point(Tup::point(0, 0.25, 0), Color::white());
-        let r = Ray::new(Tup::point(0, 0, 0), Tup::vector(0, 0, 1));
+        w.light = Light::new_point(Point::new(0, 0.25, 0), Color::white());
+        let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
         let c = w.color_at(&r);
         assert_relative_eq!(
             c,
@@ -148,7 +152,7 @@ mod test {
     #[test]
     fn intersect_world_with_ray() {
         let w = World::test_world();
-        let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
+        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
         let mut inters = Intersections::default();
         w.intersect(&r, &mut inters);
         let mut it = inters.iter();
@@ -162,14 +166,14 @@ mod test {
     #[test]
     fn color_at_miss() {
         let w = World::test_world();
-        let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 1, 0));
+        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 1, 0));
         assert_relative_eq!(w.color_at(&r), Color::black());
     }
 
     #[test]
     fn color_at_hit() {
         let w = World::test_world();
-        let r = Ray::new(Tup::point(0, 0, -5), Tup::vector(0, 0, 1));
+        let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
         assert_relative_eq!(
             w.color_at(&r),
             Color::new(
@@ -198,35 +202,35 @@ mod test {
                     ..Default::default()
                 }),
         ));
-        let r = Ray::new(Tup::point(0, 0, 0.75), Tup::vector(0, 0, -1));
+        let r = Ray::new(Point::new(0, 0, 0.75), Vector::new(0, 0, -1));
         assert_relative_eq!(w.color_at(&r), Color::white());
     }
 
     #[test]
     fn no_shadow_when_nothing_collinear() {
         let w = World::test_world();
-        let p = Tup::point(0, 0, -5);
+        let p = Point::new(0, 0, -5);
         assert!(!w.point_is_shadowed(p));
     }
 
     #[test]
     fn shadow_when_obj_intervenes() {
         let w = World::test_world();
-        let p = Tup::point(10, -10, 10);
+        let p = Point::new(10, -10, 10);
         assert!(w.point_is_shadowed(p));
     }
 
     #[test]
     fn no_shadow_when_obj_behind_light() {
         let w = World::test_world();
-        let p = Tup::point(-20, 20, -20);
+        let p = Point::new(-20, 20, -20);
         assert!(!w.point_is_shadowed(p));
     }
 
     #[test]
     fn no_shadow_when_obj_behind_point() {
         let w = World::test_world();
-        let p = Tup::point(-2, 2, -2);
+        let p = Point::new(-2, 2, -2);
         assert!(!w.point_is_shadowed(p));
     }
 }

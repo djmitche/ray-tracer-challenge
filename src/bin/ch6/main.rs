@@ -14,15 +14,15 @@ fn main() {
             color: Color::new(1, 0.2, 1),
             ..Default::default()
         });
-    let origin = Tup::point(0, 0, CAMERA_Z);
+    let origin = Point::new(0, 0, CAMERA_Z);
 
-    let light = Light::new_point(Tup::point(-10, 10, -10), Color::white());
+    let light = Light::new_point(Point::new(-10, 10, -10), Color::white());
 
     for x in 0..SIZE {
         let wall_x = (x as f64 / SIZE as f64) * WALL_SIZE - WALL_SIZE / 2.0;
         for y in 0..SIZE {
             let wall_y = (y as f64 / SIZE as f64) * WALL_SIZE - WALL_SIZE / 2.0;
-            let wall_pt = Tup::point(wall_x, -wall_y, WALL_Z);
+            let wall_pt = Point::new(wall_x, -wall_y, WALL_Z);
             let ray = Ray::new(origin, (wall_pt - origin).normalize());
 
             let mut inters = Intersections::default();

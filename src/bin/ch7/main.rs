@@ -9,7 +9,7 @@ fn main() {
     let mut c = Canvas::new(SIZE, SIZE);
 
     let mut world = World::default();
-    world.light = Light::new_point(Tup::point(-10, 10, -10), Color::white());
+    world.light = Light::new_point(Point::new(-10, 10, -10), Color::white());
 
     world.add(Box::new(
         Sphere::default()
@@ -42,13 +42,13 @@ fn main() {
                 ..Default::default()
             }),
     ));
-    let origin = Tup::point(0, 0, CAMERA_Z);
+    let origin = Point::new(0, 0, CAMERA_Z);
 
     for x in 0..SIZE {
         let wall_x = (x as f64 / SIZE as f64) * WALL_SIZE - WALL_SIZE / 2.0;
         for y in 0..SIZE {
             let wall_y = (y as f64 / SIZE as f64) * WALL_SIZE - WALL_SIZE / 2.0;
-            let wall_pt = Tup::point(wall_x, -wall_y, WALL_Z);
+            let wall_pt = Point::new(wall_x, -wall_y, WALL_Z);
             let ray = Ray::new(origin, (wall_pt - origin).normalize());
 
             c[(x, y)] = world.color_at(&ray);

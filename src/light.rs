@@ -1,13 +1,13 @@
-use crate::{spaces, Color, Material, Tup};
+use crate::{spaces, Color, Material, Point, Vector};
 
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub struct Light {
-    pub position: Tup<spaces::World>,
+    pub position: Point<spaces::World>,
     pub intensity: Color,
 }
 
 impl Light {
-    pub fn new_point(position: Tup<spaces::World>, intensity: Color) -> Self {
+    pub fn new_point(position: Point<spaces::World>, intensity: Color) -> Self {
         Self {
             position,
             intensity,
@@ -18,9 +18,9 @@ impl Light {
     pub fn lighting(
         &self,
         material: &Material,
-        point: Tup<spaces::World>,
-        eyev: Tup<spaces::World>,
-        normalv: Tup<spaces::World>,
+        point: Point<spaces::World>,
+        eyev: Vector<spaces::World>,
+        normalv: Vector<spaces::World>,
         in_shadow: bool,
     ) -> Color {
         // combine surface color and light color
@@ -73,10 +73,10 @@ mod test {
     #[test]
     fn eye_between_light_and_surface() {
         let m = Material::default();
-        let position = Tup::point(0, 0, 0);
-        let eyev = Tup::vector(0, 0, -1);
-        let normalv = Tup::vector(0, 0, -1);
-        let light = Light::new_point(Tup::point(0, 0, -10), Color::white());
+        let position = Point::new(0, 0, 0);
+        let eyev = Vector::new(0, 0, -1);
+        let normalv = Vector::new(0, 0, -1);
+        let light = Light::new_point(Point::new(0, 0, -10), Color::white());
         assert_relative_eq!(
             light.lighting(&m, position, eyev, normalv, false),
             Color::new(1.9, 1.9, 1.9)
@@ -86,10 +86,10 @@ mod test {
     #[test]
     fn eye_45_to_normal() {
         let m = Material::default();
-        let position = Tup::point(0, 0, 0);
-        let eyev = Tup::vector(0, 2f64.sqrt() / 2.0, -2f64.sqrt() / 2.0);
-        let normalv = Tup::vector(0, 0, -1);
-        let light = Light::new_point(Tup::point(0, 0, -10), Color::white());
+        let position = Point::new(0, 0, 0);
+        let eyev = Vector::new(0, 2f64.sqrt() / 2.0, -2f64.sqrt() / 2.0);
+        let normalv = Vector::new(0, 0, -1);
+        let light = Light::new_point(Point::new(0, 0, -10), Color::white());
         assert_relative_eq!(
             light.lighting(&m, position, eyev, normalv, false),
             Color::new(1.0, 1.0, 1.0)
@@ -99,10 +99,10 @@ mod test {
     #[test]
     fn light_45_to_normal() {
         let m = Material::default();
-        let position = Tup::point(0, 0, 0);
-        let eyev = Tup::vector(0, 0, -1);
-        let normalv = Tup::vector(0, 0, -1);
-        let light = Light::new_point(Tup::point(0, 10, -10), Color::white());
+        let position = Point::new(0, 0, 0);
+        let eyev = Vector::new(0, 0, -1);
+        let normalv = Vector::new(0, 0, -1);
+        let light = Light::new_point(Point::new(0, 10, -10), Color::white());
         assert_relative_eq!(
             light.lighting(&m, position, eyev, normalv, false),
             Color::new(0.7363961030678927, 0.7363961030678927, 0.7363961030678927)
@@ -112,10 +112,10 @@ mod test {
     #[test]
     fn light_eye_in_path_of_reflection() {
         let m = Material::default();
-        let position = Tup::point(0, 0, 0);
-        let eyev = Tup::vector(0, -2f64.sqrt() / 2.0, -2f64.sqrt() / 2.0);
-        let normalv = Tup::vector(0, 0, -1);
-        let light = Light::new_point(Tup::point(0, 10, -10), Color::white());
+        let position = Point::new(0, 0, 0);
+        let eyev = Vector::new(0, -2f64.sqrt() / 2.0, -2f64.sqrt() / 2.0);
+        let normalv = Vector::new(0, 0, -1);
+        let light = Light::new_point(Point::new(0, 10, -10), Color::white());
         assert_relative_eq!(
             light.lighting(&m, position, eyev, normalv, false),
             Color::new(1.6363961030678928, 1.6363961030678928, 1.6363961030678928)
@@ -125,10 +125,10 @@ mod test {
     #[test]
     fn light_behind_surface() {
         let m = Material::default();
-        let position = Tup::point(0, 0, 0);
-        let eyev = Tup::vector(0, 0, -1);
-        let normalv = Tup::vector(0, 0, -1);
-        let light = Light::new_point(Tup::point(0, 0, 10), Color::white());
+        let position = Point::new(0, 0, 0);
+        let eyev = Vector::new(0, 0, -1);
+        let normalv = Vector::new(0, 0, -1);
+        let light = Light::new_point(Point::new(0, 0, 10), Color::white());
         assert_relative_eq!(
             light.lighting(&m, position, eyev, normalv, false),
             Color::new(0.1, 0.1, 0.1)
@@ -138,10 +138,10 @@ mod test {
     #[test]
     fn surface_in_shadow() {
         let m = Material::default();
-        let position = Tup::point(0, 0, 0);
-        let eyev = Tup::vector(0, 0, -1);
-        let normalv = Tup::vector(0, 0, -1);
-        let light = Light::new_point(Tup::point(0, 0, -10), Color::white());
+        let position = Point::new(0, 0, 0);
+        let eyev = Vector::new(0, 0, -1);
+        let normalv = Vector::new(0, 0, -1);
+        let light = Light::new_point(Point::new(0, 0, -10), Color::white());
         assert_relative_eq!(
             light.lighting(&m, position, eyev, normalv, true),
             Color::new(0.1, 0.1, 0.1),

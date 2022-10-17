@@ -1,5 +1,5 @@
 use super::{Space, Vector};
-use approx::{relative_eq, AbsDiffEq, RelativeEq};
+use approx::{AbsDiffEq, RelativeEq};
 use std::marker::PhantomData;
 
 /// Point represents a location in the given space.
@@ -92,74 +92,6 @@ impl<S: Space> std::ops::Sub<Point<S>> for Point<S> {
         Vector::new(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 }
-
-/*
-impl<S: Space> std::ops::Index<usize> for Point<S> {
-    type Output = f64;
-
-    fn index(&self, idx: usize) -> &Self::Output {
-        match idx {
-            0 => &self.x,
-            1 => &self.y,
-            2 => &self.z,
-            3 => &1.0,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl<S: Space> std::ops::IndexMut<usize> for Point<S> {
-    fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
-        match idx {
-            0 => &mut self.x,
-            1 => &mut self.y,
-            2 => &mut self.z,
-            3 => panic!("cannot modify w coordinate of a point"),
-            _ => unreachable!(),
-        }
-    }
-}
-
-// TODO: point + vec
-
-// TODO: point - vec
-
-impl<S: Space> std::ops::Neg for Point<S> {
-    type Output = Self;
-    fn neg(self) -> Self {
-        Self {
-            x: -self.x,
-            y: -self.y,
-            z: -self.z,
-            space: PhantomData,
-        }
-    }
-}
-
-impl<S: Space> std::ops::Mul<f64> for Point<S> {
-    type Output = Self;
-    fn mul(self, scalar: f64) -> Self {
-        Self {
-            x: self.x * scalar,
-            y: self.y * scalar,
-            z: self.z * scalar,
-            space: PhantomData,
-        }
-    }
-}
-
-impl<S: Space> std::ops::Div<f64> for Point<S> {
-    type Output = Self;
-    fn div(self, scalar: f64) -> Self {
-        Self {
-            x: self.x / scalar,
-            y: self.y / scalar,
-            z: self.z / scalar,
-            space: PhantomData,
-        }
-    }
-}
-*/
 
 #[cfg(test)]
 mod test {
