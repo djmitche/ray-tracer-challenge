@@ -7,6 +7,7 @@ mod material;
 mod math;
 mod object;
 mod ray;
+pub mod spaces;
 mod sphere;
 mod world;
 

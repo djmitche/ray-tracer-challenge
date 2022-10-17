@@ -1,4 +1,4 @@
-use crate::{Color, Intersection, Intersections, Light, Object, Ray, Tup};
+use crate::{spaces, Color, Intersection, Intersections, Light, Object, Ray, Tup};
 
 #[derive(Debug)]
 pub struct World {
@@ -40,15 +40,18 @@ impl World {
     }
 
     /// Intersect the given ray with all objects in the world.
-    fn intersect<'o>(&'o self, ray: &Ray, inters: &mut Intersections<'o>) {
+    fn intersect<'o>(&'o self, ray: &Ray<spaces::World>, inters: &mut Intersections<'o>) {
         for o in &self.objects {
             o.intersect(ray, inters);
         }
     }
 
     /// Precompute the point of intersection, the eye vector, and the normal vector
-    /// fr the given hit of the given ray.
-    fn precompute(hit: &Intersection, ray: &Ray) -> (Tup, Tup, Tup) {
+    /// for the given hit of the given ray.
+    fn precompute(
+        hit: &Intersection,
+        ray: &Ray<spaces::World>,
+    ) -> (Tup<spaces::World>, Tup<spaces::World>, Tup<spaces::World>) {
         let point = ray.position(hit.t);
         let eyev = -ray.direction;
         let mut normalv = hit.obj.normal(point);
@@ -59,7 +62,7 @@ impl World {
         (point, eyev, normalv)
     }
 
-    fn point_is_shadowed(&self, point: Tup) -> bool {
+    fn point_is_shadowed(&self, point: Tup<spaces::World>) -> bool {
         let to_light = self.light.position - point;
         let to_light_norm = to_light.normalize();
         // move 0.01 along the ray to escape the object on which point
@@ -76,7 +79,7 @@ impl World {
     }
 
     /// Determine the color received by an eye at the origin of the given ray.
-    pub fn color_at(&self, ray: &Ray) -> Color {
+    pub fn color_at(&self, ray: &Ray<spaces::World>) -> Color {
         let mut inters = Intersections::default();
         self.intersect(ray, &mut inters);
         if let Some(hit) = inters.hit() {

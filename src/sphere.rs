@@ -1,9 +1,9 @@
-use crate::{Intersection, Intersections, Mat, Material, Object, Ray, Tup};
+use crate::{spaces, Intersection, Intersections, Mat, Material, Object, Ray, Tup};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Sphere {
-    inv_transform: Mat<4>,
-    inv_transp_transform: Mat<4>,
+    inv_transform: Mat<4, spaces::World, spaces::Object>,
+    inv_transp_transform: Mat<4, spaces::Object, spaces::World>,
     material: Material,
 }
 
@@ -18,7 +18,7 @@ impl Default for Sphere {
 }
 
 impl Sphere {
-    pub fn with_transform(mut self, transform: Mat<4>) -> Self {
+    pub fn with_transform(mut self, transform: Mat<4, spaces::Object, spaces::World>) -> Self {
         self.inv_transform = transform.inverse();
         self.inv_transp_transform = self.inv_transform.transpose();
         self
@@ -31,7 +31,7 @@ impl Sphere {
 }
 
 impl Object for Sphere {
-    fn intersect<'o>(&'o self, ray: &Ray, inters: &mut Intersections<'o>) {
+    fn intersect<'o>(&'o self, ray: &Ray<spaces::World>, inters: &mut Intersections<'o>) {
         let ray = self.inv_transform * *ray;
         let sphere_to_ray = ray.origin.as_vector();
         let a = ray.direction.dot(ray.direction);
@@ -51,7 +51,7 @@ impl Object for Sphere {
         }
     }
 
-    fn normal(&self, point: Tup) -> Tup {
+    fn normal(&self, point: Tup<spaces::World>) -> Tup<spaces::World> {
         let object_point = self.inv_transform * point;
         let object_normal = object_point.as_vector();
         let world_normal = self.inv_transp_transform * object_normal;

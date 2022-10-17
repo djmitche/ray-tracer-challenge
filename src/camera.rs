@@ -1,4 +1,4 @@
-use crate::{mat4, Color, Mat, Ray, Tup, World};
+use crate::{mat4, spaces, Color, Mat, Ray, Tup, World};
 
 /// Camera represents a view onto the world space.
 ///
@@ -12,7 +12,7 @@ pub struct Camera {
     vsize: usize,
 
     /// matrix translating camera coordinates to world coordinates
-    inv_transform: Mat<4>,
+    inv_transform: Mat<4, spaces::Camera, spaces::World>,
 
     /// half the width of the image
     half_width: f64,
@@ -25,7 +25,14 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(hsize: usize, vsize: usize, fov: f64, from: Tup, to: Tup, up: Tup) -> Self {
+    pub fn new(
+        hsize: usize,
+        vsize: usize,
+        fov: f64,
+        from: Tup<spaces::World>,
+        to: Tup<spaces::World>,
+        up: Tup<spaces::World>,
+    ) -> Self {
         let half_view = (fov / 2.0).tan();
         let aspect = hsize as f64 / vsize as f64;
         let (half_width, half_height) = if aspect >= 1.0 {
@@ -44,24 +51,31 @@ impl Camera {
         }
     }
 
-    fn view_transform(from: Tup, to: Tup, up: Tup) -> Mat<4> {
+    fn view_transform(
+        from: Tup<spaces::World>,
+        to: Tup<spaces::World>,
+        up: Tup<spaces::World>,
+    ) -> Mat<4, spaces::World, spaces::Camera> {
         let forward = (to - from).normalize();
         let left = forward.cross(up.normalize());
         let true_up = left.cross(forward);
-        mat4![
+        let xform: Mat<4, spaces::World, spaces::Camera> = mat4![
             left.x, left.y, left.z, 0;
             true_up.x, true_up.y, true_up.z, 0;
             -forward.x, -forward.y, -forward.z, 0;
             0, 0, 0, 1;
-        ] * mat4![
-            1, 0, 0, -from.x;
-            0, 1, 0, -from.y;
-            0, 0, 1, -from.z;
-            0, 0, 0, 1;
-        ]
+        ];
+        // apply transform
+        xform
+            * mat4![
+                1, 0, 0, -from.x;
+                0, 1, 0, -from.y;
+                0, 0, 1, -from.z;
+                0, 0, 0, 1;
+            ]
     }
 
-    fn ray_for_pixel(&self, x: usize, y: usize) -> Ray {
+    fn ray_for_pixel(&self, x: usize, y: usize) -> Ray<spaces::World> {
         // offset from edge of image to the _center_ of the pixel
         let xoffset = (x as f64 + 0.5) * self.pixel_size;
         let yoffset = (y as f64 + 0.5) * self.pixel_size;

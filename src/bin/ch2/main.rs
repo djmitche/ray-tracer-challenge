@@ -1,7 +1,8 @@
 use ray_tracer_challenge::*;
+
 fn main() {
     let mut c = Canvas::new(900, 550);
-    let start = Tup::point(0, 1, 0);
+    let start: Tup<spaces::World> = Tup::point(0, 1, 0);
     let gravity = Tup::vector(0, -0.1, 0);
     let wind = Tup::vector(-0.02, 0, 0);
 

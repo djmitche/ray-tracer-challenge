@@ -1,13 +1,13 @@
-use crate::{Color, Material, Tup};
+use crate::{spaces, Color, Material, Tup};
 
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub struct Light {
-    pub position: Tup,
+    pub position: Tup<spaces::World>,
     pub intensity: Color,
 }
 
 impl Light {
-    pub fn new_point(position: Tup, intensity: Color) -> Self {
+    pub fn new_point(position: Tup<spaces::World>, intensity: Color) -> Self {
         Self {
             position,
             intensity,
@@ -18,9 +18,9 @@ impl Light {
     pub fn lighting(
         &self,
         material: &Material,
-        point: Tup,
-        eyev: Tup,
-        normalv: Tup,
+        point: Tup<spaces::World>,
+        eyev: Tup<spaces::World>,
+        normalv: Tup<spaces::World>,
         in_shadow: bool,
     ) -> Color {
         // combine surface color and light color

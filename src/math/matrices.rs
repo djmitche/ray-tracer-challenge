@@ -1,8 +1,10 @@
-/// Mat represents an NxN matrix.
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Mat<const N: usize>([[f64; N]; N]);
-use crate::Tup;
+use crate::{Space, Tup};
 use approx::{AbsDiffEq, RelativeEq};
+use std::marker::PhantomData;
+
+/// An NxN matrix giving a transformation from S1 to S2.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct Mat<const N: usize, S1: Space, S2: Space>([[f64; N]; N], PhantomData<(S1, S2)>);
 
 #[macro_export]
 macro_rules! mat2 {
@@ -46,12 +48,10 @@ macro_rules! mat4 {
     }
 }
 
-// TODO: can submatrix be defined with const exprs?
-
-impl<const N: usize> Mat<N> {
+impl<const N: usize, S1: Space, S2: Space> Mat<N, S1, S2> {
     /// Create a new matrix with the given values (an array of rows)
     pub fn new(vals: [[f64; N]; N]) -> Self {
-        Self(vals)
+        Self(vals, PhantomData)
     }
 
     pub fn identity() -> Self {
@@ -62,8 +62,8 @@ impl<const N: usize> Mat<N> {
         res
     }
 
-    pub fn transpose(&self) -> Self {
-        let mut res = Self::default();
+    pub fn transpose(&self) -> Mat<N, S2, S1> {
+        let mut res = Mat::default();
         for i in 0..N {
             for j in 0..N {
                 res[(i, j)] = self[(j, i)]
@@ -73,15 +73,15 @@ impl<const N: usize> Mat<N> {
     }
 }
 
-impl Mat<2> {
+impl<S1: Space, S2: Space> Mat<2, S1, S2> {
     pub fn determinant(&self) -> f64 {
         self[(0, 0)] * self[(1, 1)] - self[(0, 1)] * self[(1, 0)]
     }
 }
 
-impl Mat<3> {
-    pub fn submatrix(self, r: usize, c: usize) -> Mat<2> {
-        let mut res: Mat<2> = Default::default();
+impl<S1: Space, S2: Space> Mat<3, S1, S2> {
+    pub fn submatrix(self, r: usize, c: usize) -> Mat<2, S1, S2> {
+        let mut res: Mat<2, S1, S2> = Default::default();
         let mut ii = 0;
         for i in 0..3 {
             if i == r {
@@ -126,9 +126,9 @@ impl Mat<3> {
     }
 }
 
-impl Mat<4> {
-    pub fn submatrix(self, r: usize, c: usize) -> Mat<3> {
-        let mut res: Mat<3> = Default::default();
+impl<S1: Space, S2: Space> Mat<4, S1, S2> {
+    pub fn submatrix(self, r: usize, c: usize) -> Mat<3, S1, S2> {
+        let mut res: Mat<3, S1, S2> = Default::default();
         let mut ii = 0;
         for i in 0..4 {
             if i == r {
@@ -172,8 +172,8 @@ impl Mat<4> {
         self.determinant() != 0.0
     }
 
-    pub fn inverse(&self) -> Self {
-        let mut res: Mat<4> = Default::default();
+    pub fn inverse(&self) -> Mat<4, S2, S1> {
+        let mut res: Mat<4, S2, S1> = Default::default();
         let det = self.determinant();
         for r in 0..4 {
             for c in 0..4 {
@@ -262,13 +262,13 @@ impl Mat<4> {
     }
 }
 
-impl<const N: usize> Default for Mat<N> {
+impl<const N: usize, S1: Space, S2: Space> Default for Mat<N, S1, S2> {
     fn default() -> Self {
-        Self([[0f64; N]; N])
+        Self([[0f64; N]; N], PhantomData)
     }
 }
 
-impl<const N: usize> std::ops::Index<(usize, usize)> for Mat<N> {
+impl<const N: usize, S1: Space, S2: Space> std::ops::Index<(usize, usize)> for Mat<N, S1, S2> {
     type Output = f64;
 
     fn index(&self, idx: (usize, usize)) -> &Self::Output {
@@ -276,13 +276,13 @@ impl<const N: usize> std::ops::Index<(usize, usize)> for Mat<N> {
     }
 }
 
-impl<const N: usize> std::ops::IndexMut<(usize, usize)> for Mat<N> {
+impl<const N: usize, S1: Space, S2: Space> std::ops::IndexMut<(usize, usize)> for Mat<N, S1, S2> {
     fn index_mut(&mut self, idx: (usize, usize)) -> &mut Self::Output {
         &mut self.0[idx.0][idx.1]
     }
 }
 
-impl<const N: usize> AbsDiffEq for Mat<N> {
+impl<const N: usize, S1: Space, S2: Space> AbsDiffEq for Mat<N, S1, S2> {
     type Epsilon = <f64 as AbsDiffEq>::Epsilon;
 
     fn default_epsilon() -> <f64 as AbsDiffEq>::Epsilon {
@@ -301,7 +301,7 @@ impl<const N: usize> AbsDiffEq for Mat<N> {
     }
 }
 
-impl<const N: usize> RelativeEq for Mat<N> {
+impl<const N: usize, S1: Space, S2: Space> RelativeEq for Mat<N, S1, S2> {
     fn default_max_relative() -> <f64 as AbsDiffEq>::Epsilon {
         <f64 as RelativeEq>::default_max_relative()
     }
@@ -328,10 +328,12 @@ impl<const N: usize> RelativeEq for Mat<N> {
     }
 }
 
-impl<const N: usize> std::ops::Mul<Mat<N>> for Mat<N> {
-    type Output = Self;
-    fn mul(self, other: Mat<N>) -> Self {
-        let mut res = Self::default();
+impl<const N: usize, S1: Space, S2: Space, S3: Space> std::ops::Mul<Mat<N, S1, S2>>
+    for Mat<N, S2, S3>
+{
+    type Output = Mat<N, S1, S3>;
+    fn mul(self, other: Mat<N, S1, S2>) -> Mat<N, S1, S3> {
+        let mut res = Self::Output::default();
         for i in 0..N {
             for j in 0..N {
                 let mut v = 0.0;
@@ -345,9 +347,9 @@ impl<const N: usize> std::ops::Mul<Mat<N>> for Mat<N> {
     }
 }
 
-impl std::ops::Mul<Tup> for Mat<4> {
-    type Output = Tup;
-    fn mul(self, other: Tup) -> Tup {
+impl<S1: Space, S2: Space> std::ops::Mul<Tup<S1>> for Mat<4, S1, S2> {
+    type Output = Tup<S2>;
+    fn mul(self, other: Tup<S1>) -> Tup<S2> {
         let mut res = Tup::default();
         for i in 0..4 {
             let mut v = 0.0;
@@ -363,13 +365,14 @@ impl std::ops::Mul<Tup> for Mat<4> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::spaces;
     use approx::*;
     use std::f64::consts::PI;
 
     /// Constructing and inspecting a 4x4 matrix
     #[test]
     fn test_4x4() {
-        let mat = mat4![
+        let mat: Mat<4, spaces::World, spaces::World> = mat4![
             1, 2, 3, 4;
             5.5, 6.5, 7.5, 8.5;
             9, 10, 11, 12;
@@ -388,7 +391,7 @@ mod test {
     /// Constructing and inspecting a 2x2 matrix
     #[test]
     fn test_2x2() {
-        let mat = mat2![
+        let mat: Mat<2, spaces::World, spaces::World> = mat2![
             -3, 5;
             1, -2;
         ];
@@ -402,7 +405,7 @@ mod test {
     /// Constructing and inspecting a 3x3 matrix
     #[test]
     fn test_3x3() {
-        let mat = mat3![
+        let mat: Mat<3, spaces::World, spaces::World> = mat3![
             -3, 5, 0;
             1, -2, -7;
             0, 1, 1;
@@ -416,13 +419,13 @@ mod test {
     /// Matrix equality with different matrices
     #[test]
     fn equality_ne() {
-        let a = mat4![
+        let a: Mat<4, spaces::World, spaces::World> = mat4![
             1, 2, 3, 4;
             5, 6, 7, 8;
             13, 14, 15, 16;
             17, 18, 19, 20;
         ];
-        let b = mat4![
+        let b: Mat<4, spaces::World, spaces::World> = mat4![
             5, 6, 7, 8;
             1, 2, 3, 4;
             17, 18, 19, 20;
@@ -434,13 +437,13 @@ mod test {
     /// Matrix equality with identical matrices
     #[test]
     fn equality_eq() {
-        let a = mat4![
+        let a: Mat<4, spaces::World, spaces::World> = mat4![
             1, 2, 3, 4;
             5, 6, 7, 8;
             13, 14, 15, 16;
             17, 18, 19, 20;
         ];
-        let b = mat4![
+        let b: Mat<4, spaces::World, spaces::World> = mat4![
             1, 2, 3, 4;
             5, 6, 7, 8;
             13, 14, 15, 16;
@@ -452,19 +455,19 @@ mod test {
     /// Multiplying two matrices
     #[test]
     fn multiply_mat() {
-        let a = mat4![
+        let a: Mat<4, spaces::World, spaces::Object> = mat4![
             1, 2, 3, 4;
             5, 6, 7, 8;
             9, 8, 7, 6;
             5, 4, 3, 2;
         ];
-        let b = mat4![
+        let b: Mat<4, spaces::Camera, spaces::World> = mat4![
             -2, 1, 2, 3;
             3, 2, 1, -1;
             4, 3, 6, 5;
             1, 2, 7, 8;
         ];
-        let res = mat4![
+        let res: Mat<4, spaces::Camera, spaces::Object> = mat4![
             20, 22, 50, 48;
             44, 54, 114, 108;
             40, 58, 110, 102;
@@ -476,21 +479,21 @@ mod test {
     /// A matrix multiplied by a tuple.
     #[test]
     fn multiply_tup() {
-        let a = mat4![
+        let a: Mat<4, spaces::Camera, spaces::World> = mat4![
             1, 2, 3, 4;
             2, 4, 4, 2;
             8, 6, 4, 1;
             0, 0, 0, 1;
         ];
-        let b = Tup::new(1, 2, 3, 1);
-        let res = Tup::new(18, 24, 33, 1);
+        let b: Tup<spaces::Camera> = Tup::new(1, 2, 3, 1);
+        let res: Tup<spaces::World> = Tup::new(18, 24, 33, 1);
         assert_relative_eq!(a * b, res);
     }
 
     /// Multiplying by the identity matrix
     #[test]
     fn multiply_mat_identity() {
-        let a = mat4![
+        let a: Mat<4, spaces::World, spaces::World> = mat4![
             1, 2, 3, 4;
             5, 6, 7, 8;
             9, 8, 7, 6;
@@ -503,13 +506,13 @@ mod test {
     /// Transposing a 4x4 matrix
     #[test]
     fn mat_transpose_4x4() {
-        let a = mat4![
+        let a: Mat<4, spaces::World, spaces::World> = mat4![
             1, 2, 3, 4;
             5, 6, 7, 8;
             9, 8, 7, 6;
             5, 4, 3, 2;
         ];
-        let b = mat4![
+        let b: Mat<4, spaces::World, spaces::World> = mat4![
             1, 5, 9, 5;
             2, 6, 8, 4;
             3, 7, 7, 3;
@@ -522,11 +525,11 @@ mod test {
     /// Transposing a 2x2 matrix
     #[test]
     fn mat_transpose_2x2() {
-        let a = mat2![
+        let a: Mat<2, spaces::World, spaces::World> = mat2![
             1, 2;
             5, 6;
         ];
-        let b = mat2![
+        let b: Mat<2, spaces::World, spaces::World> = mat2![
             1, 5;
             2, 6;
         ];
@@ -537,16 +540,28 @@ mod test {
     /// Transposing the identity matrix
     #[test]
     fn mat_transpose_ident() {
-        assert_relative_eq!(Mat::<1>::identity().transpose(), Mat::identity());
-        assert_relative_eq!(Mat::<2>::identity().transpose(), Mat::identity());
-        assert_relative_eq!(Mat::<3>::identity().transpose(), Mat::identity());
-        assert_relative_eq!(Mat::<4>::identity().transpose(), Mat::identity());
+        assert_relative_eq!(
+            Mat::<1, spaces::World, spaces::World>::identity().transpose(),
+            Mat::identity()
+        );
+        assert_relative_eq!(
+            Mat::<2, spaces::World, spaces::World>::identity().transpose(),
+            Mat::identity()
+        );
+        assert_relative_eq!(
+            Mat::<3, spaces::World, spaces::World>::identity().transpose(),
+            Mat::identity()
+        );
+        assert_relative_eq!(
+            Mat::<4, spaces::World, spaces::World>::identity().transpose(),
+            Mat::identity()
+        );
     }
 
     /// Determinant of a 2x2 matrix
     #[test]
     fn determinant_2x2() {
-        let a = mat2![
+        let a: Mat<2, spaces::World, spaces::World> = mat2![
             1, 5;
             -3, 2;
         ];
@@ -556,7 +571,7 @@ mod test {
     /// Submatrix of a 3x3 matrix
     #[test]
     fn submat_3x3() {
-        let a = mat3![
+        let a: Mat<3, spaces::World, spaces::World> = mat3![
             1, 5, 0;
             -3, 2, 7;
             0, 6, -3;
@@ -571,7 +586,7 @@ mod test {
     /// Submatrix of a 4x4 matrix
     #[test]
     fn submat_4x4() {
-        let a = mat4![
+        let a: Mat<4, spaces::World, spaces::World> = mat4![
             1, 2, 3, 4;
             5, 6, 7, 8;
             9, 8, 7, 6;
@@ -588,7 +603,7 @@ mod test {
     /// Calculating a minor of a 3x3 matrix
     #[test]
     fn minor_3x3() {
-        let a = mat3![
+        let a: Mat<3, spaces::World, spaces::World> = mat3![
             3, 5, 0;
             2, -1, -7;
             6, -1, 5;
@@ -599,7 +614,7 @@ mod test {
     /// Calculating a cofactor of a 3x3 matrix
     #[test]
     fn cofactor_3x3() {
-        let a = mat3![
+        let a: Mat<3, spaces::World, spaces::World> = mat3![
             3, 5, 0;
             2, -1, -7;
             6, -1, 5;
@@ -613,7 +628,7 @@ mod test {
     /// Calculating the determinant of a 3x3 matrix
     #[test]
     fn det_3x3() {
-        let a = mat3![
+        let a: Mat<3, spaces::World, spaces::World> = mat3![
             1, 2, 6;
             -5, 8, -4;
             2, 6, 4;
@@ -627,7 +642,7 @@ mod test {
     /// Calculating the determinant of a 4x4 matrix
     #[test]
     fn det_4x4() {
-        let a = mat4![
+        let a: Mat<4, spaces::World, spaces::World> = mat4![
             -2, -8, 3, 5;
             -3, 1, 7, 3;
             1, 2, -9, 6;
@@ -639,7 +654,7 @@ mod test {
     /// Testing an invertible matrix for invertibility
     #[test]
     fn invertibility_yes() {
-        let a = mat4![
+        let a: Mat<4, spaces::World, spaces::World> = mat4![
             6, 4, 4, 4;
             5, 5, 7, 6;
             4, -9, 3, -7;
@@ -652,7 +667,7 @@ mod test {
     /// Testing a non-invertible matrix for invertibility
     #[test]
     fn invertibility_no() {
-        let a = mat4![
+        let a: Mat<4, spaces::World, spaces::World> = mat4![
             -4, 2, -2, -3;
             9, 6, 2, 6;
             0, -5, 1, -5;
@@ -665,7 +680,7 @@ mod test {
     /// Calcuating the inverse of a matrix
     #[test]
     fn invert() {
-        let a = mat4![
+        let a: Mat<4, spaces::World, spaces::World> = mat4![
             -5, 2, 6, -8;
             1, -5, 1, 8;
             7, 7, -6, -7;
@@ -695,7 +710,7 @@ mod test {
     /// Calcuating the inverse of a second matrix
     #[test]
     fn invert_2() {
-        let a = mat4![
+        let a: Mat<4, spaces::World, spaces::World> = mat4![
             8, -5, 9, 2;
             7, 5, 6, 1;
             -6, 0, 9, 6;
@@ -718,13 +733,13 @@ mod test {
     /// Multiplying a matrix by its inverse
     #[test]
     fn multiply_by_inverse() {
-        let a = mat4![
+        let a: Mat<4, spaces::World, spaces::World> = mat4![
             8, -5, 9, 2;
             7, 5, 6, 1;
             -6, 0, 9, 6;
             -3, 0, -9, -4;
         ];
-        let b = mat4![
+        let b: Mat<4, spaces::World, spaces::World> = mat4![
             -5, 2, 6, -8;
             1, -5, 1, 8;
             7, 7, -6, -7;
@@ -740,126 +755,112 @@ mod test {
 
     #[test]
     fn mult_by_translation() {
-        let transform = Mat::identity().translate(5, -3, 2);
+        let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().translate(5, -3, 2);
         let p = Tup::point(-3, 4, 5);
         assert_relative_eq!(transform * p, Tup::point(2, 1, 7));
     }
 
     #[test]
     fn mult_by_inv_translation() {
-        let transform = Mat::identity().translate(5, -3, 2);
+        let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().translate(5, -3, 2);
         let p = Tup::point(-3, 4, 5);
         assert_relative_eq!(transform.inverse() * p, Tup::point(-8, 7, 3));
     }
 
     #[test]
     fn trans_does_not_affect_vectors() {
-        let transform = Mat::identity().translate(5, -3, 2);
+        let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().translate(5, -3, 2);
         let v = Tup::vector(-3, 4, 5);
         assert_relative_eq!(transform * v, v);
     }
 
     #[test]
     fn scaling_pt() {
-        let transform = Mat::identity().scale(2, 3, 4);
+        let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().scale(2, 3, 4);
         let p = Tup::point(-4, 6, 8);
         assert_relative_eq!(transform * p, Tup::point(-8, 18, 32));
     }
 
     #[test]
     fn scaling_vec() {
-        let transform = Mat::identity().scale(2, 3, 4);
+        let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().scale(2, 3, 4);
         let p = Tup::vector(-4, 6, 8);
         assert_relative_eq!(transform * p, Tup::vector(-8, 18, 32));
     }
 
     #[test]
     fn scaling_vec_inv() {
-        let transform = Mat::identity().scale(2, 3, 4);
+        let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().scale(2, 3, 4);
         let p = Tup::vector(-4, 6, 8);
         assert_relative_eq!(transform.inverse() * p, Tup::vector(-2, 2, 2));
     }
 
     #[test]
     fn scaling_reflect() {
-        let transform = Mat::identity().scale(-1, 1, 1);
+        let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().scale(-1, 1, 1);
         let p = Tup::point(2, 3, 4);
         assert_relative_eq!(transform * p, Tup::point(-2, 3, 4));
     }
 
     #[test]
     fn rot_x() {
-        let p = Tup::point(0, 1, 0);
+        let p: Tup<spaces::World> = Tup::point(0, 1, 0);
+        let id: Mat<4, spaces::World, spaces::World> = Mat::identity();
         assert_relative_eq!(
-            Mat::identity().rotate_x(PI / 4.0) * p,
+            id.rotate_x(PI / 4.0) * p,
             Tup::point(0, 2f64.sqrt() / 2.0, 2f64.sqrt() / 2.0)
         );
-        assert_relative_eq!(Mat::identity().rotate_x(PI / 2.0) * p, Tup::point(0, 0, 1));
+        assert_relative_eq!(id.rotate_x(PI / 2.0) * p, Tup::point(0, 0, 1));
     }
 
     #[test]
     fn rot_y() {
-        let p = Tup::point(0, 0, 1);
+        let p: Tup<spaces::World> = Tup::point(0, 0, 1);
+        let id: Mat<4, spaces::World, spaces::World> = Mat::identity();
         assert_relative_eq!(
-            Mat::identity().rotate_y(PI / 4.0) * p,
+            id.rotate_y(PI / 4.0) * p,
             Tup::point(2f64.sqrt() / 2.0, 0, 2f64.sqrt() / 2.0)
         );
-        assert_relative_eq!(Mat::identity().rotate_y(PI / 2.0) * p, Tup::point(1, 0, 0));
+        assert_relative_eq!(id.rotate_y(PI / 2.0) * p, Tup::point(1, 0, 0));
     }
 
     #[test]
     fn rot_z() {
-        let p = Tup::point(0, 1, 0);
+        let p: Tup<spaces::World> = Tup::point(0, 1, 0);
+        let id: Mat<4, spaces::World, spaces::World> = Mat::identity();
         assert_relative_eq!(
-            Mat::identity().rotate_z(PI / 4.0) * p,
+            id.rotate_z(PI / 4.0) * p,
             Tup::point(-2f64.sqrt() / 2.0, 2f64.sqrt() / 2.0, 0)
         );
-        assert_relative_eq!(Mat::identity().rotate_z(PI / 2.0) * p, Tup::point(-1, 0, 0));
+        assert_relative_eq!(id.rotate_z(PI / 2.0) * p, Tup::point(-1, 0, 0));
     }
 
     #[test]
     fn shear() {
-        let p = Tup::point(2, 3, 4);
-        assert_relative_eq!(
-            Mat::identity().shear(1, 0, 0, 0, 0, 0) * p,
-            Tup::point(5, 3, 4)
-        );
-        assert_relative_eq!(
-            Mat::identity().shear(0, 1, 0, 0, 0, 0) * p,
-            Tup::point(6, 3, 4)
-        );
-        assert_relative_eq!(
-            Mat::identity().shear(0, 0, 1, 0, 0, 0) * p,
-            Tup::point(2, 5, 4)
-        );
-        assert_relative_eq!(
-            Mat::identity().shear(0, 0, 0, 1, 0, 0) * p,
-            Tup::point(2, 7, 4)
-        );
-        assert_relative_eq!(
-            Mat::identity().shear(0, 0, 0, 0, 1, 0) * p,
-            Tup::point(2, 3, 6)
-        );
-        assert_relative_eq!(
-            Mat::identity().shear(0, 0, 0, 0, 0, 1) * p,
-            Tup::point(2, 3, 7)
-        );
+        let p: Tup<spaces::World> = Tup::point(2, 3, 4);
+        let id: Mat<4, spaces::World, spaces::World> = Mat::identity();
+        assert_relative_eq!(id.shear(1, 0, 0, 0, 0, 0) * p, Tup::point(5, 3, 4));
+        assert_relative_eq!(id.shear(0, 1, 0, 0, 0, 0) * p, Tup::point(6, 3, 4));
+        assert_relative_eq!(id.shear(0, 0, 1, 0, 0, 0) * p, Tup::point(2, 5, 4));
+        assert_relative_eq!(id.shear(0, 0, 0, 1, 0, 0) * p, Tup::point(2, 7, 4));
+        assert_relative_eq!(id.shear(0, 0, 0, 0, 1, 0) * p, Tup::point(2, 3, 6));
+        assert_relative_eq!(id.shear(0, 0, 0, 0, 0, 1) * p, Tup::point(2, 3, 7));
     }
 
     #[test]
     fn combined_xforms() {
-        let p = Tup::point(1, 0, 1);
-        let m = Mat::identity().rotate_x(PI / 2.0);
+        let p: Tup<spaces::World> = Tup::point(1, 0, 1);
+        let m: Mat<4, spaces::World, spaces::World> = Mat::identity().rotate_x(PI / 2.0);
         assert_relative_eq!(m * p, Tup::point(1, -1, 0));
 
-        let m = m.scale(5, 5, 5);
+        let m: Mat<4, spaces::World, spaces::World> = m.scale(5, 5, 5);
         assert!(Relative {
             epsilon: 0.00001,
             max_relative: 0.00001
         }
         .eq(&(m * p), &Tup::point(5, -5, 0)));
 
-        let m = m.translate(10, 5, 7);
+        let m: Mat<4, spaces::World, spaces::World> = m.translate(10, 5, 7);
         assert_relative_eq!(m * p, Tup::point(15, 0, 7));
         assert!(Relative {
             epsilon: 0.00001,
