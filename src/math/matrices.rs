@@ -1,4 +1,4 @@
-use crate::{Space, Tup};
+use crate::{Point, Space, Tup, Vector};
 use approx::{AbsDiffEq, RelativeEq};
 use std::marker::PhantomData;
 
@@ -362,6 +362,30 @@ impl<S1: Space, S2: Space> std::ops::Mul<Tup<S1>> for Mat<4, S1, S2> {
     }
 }
 
+impl<S1: Space, S2: Space> std::ops::Mul<Vector<S1>> for Mat<4, S1, S2> {
+    type Output = Vector<S2>;
+    fn mul(self, other: Vector<S1>) -> Vector<S2> {
+        Vector::new(
+            // implicit 4th element of `other` is 0.0
+            other.x * self[(0, 0)] + other.y * self[(0, 1)] + other.z * self[(0, 2)],
+            other.x * self[(1, 0)] + other.y * self[(1, 1)] + other.z * self[(1, 2)],
+            other.x * self[(2, 0)] + other.y * self[(2, 1)] + other.z * self[(2, 2)],
+        )
+    }
+}
+
+impl<S1: Space, S2: Space> std::ops::Mul<Point<S1>> for Mat<4, S1, S2> {
+    type Output = Point<S2>;
+    fn mul(self, other: Point<S1>) -> Point<S2> {
+        Point::new(
+            // implicit 4th element of `other` is 1.0
+            other.x * self[(0, 0)] + other.y * self[(0, 1)] + other.z * self[(0, 2)] + self[(0, 3)],
+            other.x * self[(1, 0)] + other.y * self[(1, 1)] + other.z * self[(1, 2)] + self[(1, 3)],
+            other.x * self[(2, 0)] + other.y * self[(2, 1)] + other.z * self[(2, 2)] + self[(2, 3)],
+        )
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -487,6 +511,34 @@ mod test {
         ];
         let b: Tup<spaces::Camera> = Tup::new(1, 2, 3, 1);
         let res: Tup<spaces::World> = Tup::new(18, 24, 33, 1);
+        assert_relative_eq!(a * b, res);
+    }
+
+    /// A matrix multiplied by a vector.
+    #[test]
+    fn multiply_vector() {
+        let a: Mat<4, spaces::Camera, spaces::World> = mat4![
+            1, 2, 3, 4;
+            2, 4, 4, 2;
+            8, 6, 4, 1;
+            0, 0, 0, 1;
+        ];
+        let b: Vector<spaces::Camera> = Vector::new(1, 2, 3);
+        let res: Vector<spaces::World> = Vector::new(14, 22, 32);
+        assert_relative_eq!(a * b, res);
+    }
+
+    /// A matrix multiplied by a point.
+    #[test]
+    fn multiply_point() {
+        let a: Mat<4, spaces::Camera, spaces::World> = mat4![
+            1, 2, 3, 4;
+            2, 4, 4, 2;
+            8, 6, 4, 1;
+            0, 0, 0, 1;
+        ];
+        let b: Point<spaces::Camera> = Point::new(1, 2, 3);
+        let res: Point<spaces::World> = Point::new(18, 24, 33);
         assert_relative_eq!(a * b, res);
     }
 
@@ -756,116 +808,116 @@ mod test {
     #[test]
     fn mult_by_translation() {
         let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().translate(5, -3, 2);
-        let p = Tup::point(-3, 4, 5);
-        assert_relative_eq!(transform * p, Tup::point(2, 1, 7));
+        let p = Point::new(-3, 4, 5);
+        assert_relative_eq!(transform * p, Point::new(2, 1, 7));
     }
 
     #[test]
     fn mult_by_inv_translation() {
         let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().translate(5, -3, 2);
-        let p = Tup::point(-3, 4, 5);
-        assert_relative_eq!(transform.inverse() * p, Tup::point(-8, 7, 3));
+        let p = Point::new(-3, 4, 5);
+        assert_relative_eq!(transform.inverse() * p, Point::new(-8, 7, 3));
     }
 
     #[test]
     fn trans_does_not_affect_vectors() {
         let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().translate(5, -3, 2);
-        let v = Tup::vector(-3, 4, 5);
+        let v = Vector::new(-3, 4, 5);
         assert_relative_eq!(transform * v, v);
     }
 
     #[test]
     fn scaling_pt() {
         let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().scale(2, 3, 4);
-        let p = Tup::point(-4, 6, 8);
-        assert_relative_eq!(transform * p, Tup::point(-8, 18, 32));
+        let p = Point::new(-4, 6, 8);
+        assert_relative_eq!(transform * p, Point::new(-8, 18, 32));
     }
 
     #[test]
     fn scaling_vec() {
         let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().scale(2, 3, 4);
-        let p = Tup::vector(-4, 6, 8);
-        assert_relative_eq!(transform * p, Tup::vector(-8, 18, 32));
+        let p = Vector::new(-4, 6, 8);
+        assert_relative_eq!(transform * p, Vector::new(-8, 18, 32));
     }
 
     #[test]
     fn scaling_vec_inv() {
         let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().scale(2, 3, 4);
-        let p = Tup::vector(-4, 6, 8);
-        assert_relative_eq!(transform.inverse() * p, Tup::vector(-2, 2, 2));
+        let p = Vector::new(-4, 6, 8);
+        assert_relative_eq!(transform.inverse() * p, Vector::new(-2, 2, 2));
     }
 
     #[test]
     fn scaling_reflect() {
         let transform: Mat<4, spaces::World, spaces::World> = Mat::identity().scale(-1, 1, 1);
-        let p = Tup::point(2, 3, 4);
-        assert_relative_eq!(transform * p, Tup::point(-2, 3, 4));
+        let p = Point::new(2, 3, 4);
+        assert_relative_eq!(transform * p, Point::new(-2, 3, 4));
     }
 
     #[test]
     fn rot_x() {
-        let p: Tup<spaces::World> = Tup::point(0, 1, 0);
+        let p: Point<spaces::World> = Point::new(0, 1, 0);
         let id: Mat<4, spaces::World, spaces::World> = Mat::identity();
         assert_relative_eq!(
             id.rotate_x(PI / 4.0) * p,
-            Tup::point(0, 2f64.sqrt() / 2.0, 2f64.sqrt() / 2.0)
+            Point::new(0, 2f64.sqrt() / 2.0, 2f64.sqrt() / 2.0)
         );
-        assert_relative_eq!(id.rotate_x(PI / 2.0) * p, Tup::point(0, 0, 1));
+        assert_relative_eq!(id.rotate_x(PI / 2.0) * p, Point::new(0, 0, 1));
     }
 
     #[test]
     fn rot_y() {
-        let p: Tup<spaces::World> = Tup::point(0, 0, 1);
+        let p: Point<spaces::World> = Point::new(0, 0, 1);
         let id: Mat<4, spaces::World, spaces::World> = Mat::identity();
         assert_relative_eq!(
             id.rotate_y(PI / 4.0) * p,
-            Tup::point(2f64.sqrt() / 2.0, 0, 2f64.sqrt() / 2.0)
+            Point::new(2f64.sqrt() / 2.0, 0, 2f64.sqrt() / 2.0)
         );
-        assert_relative_eq!(id.rotate_y(PI / 2.0) * p, Tup::point(1, 0, 0));
+        assert_relative_eq!(id.rotate_y(PI / 2.0) * p, Point::new(1, 0, 0));
     }
 
     #[test]
     fn rot_z() {
-        let p: Tup<spaces::World> = Tup::point(0, 1, 0);
+        let p: Point<spaces::World> = Point::new(0, 1, 0);
         let id: Mat<4, spaces::World, spaces::World> = Mat::identity();
         assert_relative_eq!(
             id.rotate_z(PI / 4.0) * p,
-            Tup::point(-2f64.sqrt() / 2.0, 2f64.sqrt() / 2.0, 0)
+            Point::new(-2f64.sqrt() / 2.0, 2f64.sqrt() / 2.0, 0)
         );
-        assert_relative_eq!(id.rotate_z(PI / 2.0) * p, Tup::point(-1, 0, 0));
+        assert_relative_eq!(id.rotate_z(PI / 2.0) * p, Point::new(-1, 0, 0));
     }
 
     #[test]
     fn shear() {
-        let p: Tup<spaces::World> = Tup::point(2, 3, 4);
+        let p: Point<spaces::World> = Point::new(2, 3, 4);
         let id: Mat<4, spaces::World, spaces::World> = Mat::identity();
-        assert_relative_eq!(id.shear(1, 0, 0, 0, 0, 0) * p, Tup::point(5, 3, 4));
-        assert_relative_eq!(id.shear(0, 1, 0, 0, 0, 0) * p, Tup::point(6, 3, 4));
-        assert_relative_eq!(id.shear(0, 0, 1, 0, 0, 0) * p, Tup::point(2, 5, 4));
-        assert_relative_eq!(id.shear(0, 0, 0, 1, 0, 0) * p, Tup::point(2, 7, 4));
-        assert_relative_eq!(id.shear(0, 0, 0, 0, 1, 0) * p, Tup::point(2, 3, 6));
-        assert_relative_eq!(id.shear(0, 0, 0, 0, 0, 1) * p, Tup::point(2, 3, 7));
+        assert_relative_eq!(id.shear(1, 0, 0, 0, 0, 0) * p, Point::new(5, 3, 4));
+        assert_relative_eq!(id.shear(0, 1, 0, 0, 0, 0) * p, Point::new(6, 3, 4));
+        assert_relative_eq!(id.shear(0, 0, 1, 0, 0, 0) * p, Point::new(2, 5, 4));
+        assert_relative_eq!(id.shear(0, 0, 0, 1, 0, 0) * p, Point::new(2, 7, 4));
+        assert_relative_eq!(id.shear(0, 0, 0, 0, 1, 0) * p, Point::new(2, 3, 6));
+        assert_relative_eq!(id.shear(0, 0, 0, 0, 0, 1) * p, Point::new(2, 3, 7));
     }
 
     #[test]
     fn combined_xforms() {
-        let p: Tup<spaces::World> = Tup::point(1, 0, 1);
+        let p: Point<spaces::World> = Point::new(1, 0, 1);
         let m: Mat<4, spaces::World, spaces::World> = Mat::identity().rotate_x(PI / 2.0);
-        assert_relative_eq!(m * p, Tup::point(1, -1, 0));
+        assert_relative_eq!(m * p, Point::new(1, -1, 0));
 
         let m: Mat<4, spaces::World, spaces::World> = m.scale(5, 5, 5);
         assert!(Relative {
             epsilon: 0.00001,
             max_relative: 0.00001
         }
-        .eq(&(m * p), &Tup::point(5, -5, 0)));
+        .eq(&(m * p), &Point::new(5, -5, 0)));
 
         let m: Mat<4, spaces::World, spaces::World> = m.translate(10, 5, 7);
-        assert_relative_eq!(m * p, Tup::point(15, 0, 7));
+        assert_relative_eq!(m * p, Point::new(15, 0, 7));
         assert!(Relative {
             epsilon: 0.00001,
             max_relative: 0.00001
         }
-        .eq(&(m * p), &Tup::point(15, 0, 7)));
+        .eq(&(m * p), &Point::new(15, 0, 7)));
     }
 }
