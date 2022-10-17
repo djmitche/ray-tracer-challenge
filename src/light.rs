@@ -15,7 +15,14 @@ impl Light {
     }
 
     /// Calculate the lighting for the given args.
-    pub fn lighting(&self, material: &Material, point: Tup, eyev: Tup, normalv: Tup) -> Color {
+    pub fn lighting(
+        &self,
+        material: &Material,
+        point: Tup,
+        eyev: Tup,
+        normalv: Tup,
+        in_shadow: bool,
+    ) -> Color {
         // combine surface color and light color
         let eff_color = material.color * self.intensity;
 
@@ -24,6 +31,10 @@ impl Light {
 
         // compute the ambient contribution
         let ambient = eff_color * material.ambient;
+
+        if in_shadow {
+            return ambient;
+        }
 
         // calculate diffuse and specular
         let diffuse;
@@ -67,7 +78,7 @@ mod test {
         let normalv = Tup::vector(0, 0, -1);
         let light = Light::new_point(Tup::point(0, 0, -10), Color::white());
         assert_relative_eq!(
-            light.lighting(&m, position, eyev, normalv),
+            light.lighting(&m, position, eyev, normalv, false),
             Color::new(1.9, 1.9, 1.9)
         );
     }
@@ -80,7 +91,7 @@ mod test {
         let normalv = Tup::vector(0, 0, -1);
         let light = Light::new_point(Tup::point(0, 0, -10), Color::white());
         assert_relative_eq!(
-            light.lighting(&m, position, eyev, normalv),
+            light.lighting(&m, position, eyev, normalv, false),
             Color::new(1.0, 1.0, 1.0)
         );
     }
@@ -93,7 +104,7 @@ mod test {
         let normalv = Tup::vector(0, 0, -1);
         let light = Light::new_point(Tup::point(0, 10, -10), Color::white());
         assert_relative_eq!(
-            light.lighting(&m, position, eyev, normalv),
+            light.lighting(&m, position, eyev, normalv, false),
             Color::new(0.7363961030678927, 0.7363961030678927, 0.7363961030678927)
         );
     }
@@ -106,7 +117,7 @@ mod test {
         let normalv = Tup::vector(0, 0, -1);
         let light = Light::new_point(Tup::point(0, 10, -10), Color::white());
         assert_relative_eq!(
-            light.lighting(&m, position, eyev, normalv),
+            light.lighting(&m, position, eyev, normalv, false),
             Color::new(1.6363961030678928, 1.6363961030678928, 1.6363961030678928)
         );
     }
@@ -119,8 +130,21 @@ mod test {
         let normalv = Tup::vector(0, 0, -1);
         let light = Light::new_point(Tup::point(0, 0, 10), Color::white());
         assert_relative_eq!(
-            light.lighting(&m, position, eyev, normalv),
+            light.lighting(&m, position, eyev, normalv, false),
             Color::new(0.1, 0.1, 0.1)
+        );
+    }
+
+    #[test]
+    fn surface_in_shadow() {
+        let m = Material::default();
+        let position = Tup::point(0, 0, 0);
+        let eyev = Tup::vector(0, 0, -1);
+        let normalv = Tup::vector(0, 0, -1);
+        let light = Light::new_point(Tup::point(0, 0, -10), Color::white());
+        assert_relative_eq!(
+            light.lighting(&m, position, eyev, normalv, true),
+            Color::new(0.1, 0.1, 0.1),
         );
     }
 }

@@ -1,6 +1,6 @@
 use ray_tracer_challenge::*;
 
-const SIZE: usize = 1000;
+const SIZE: usize = 500;
 const CAMERA_Z: f64 = -5.0;
 const WALL_Z: f64 = 10.0;
 const WALL_SIZE: f64 = 7.0;
@@ -16,14 +16,16 @@ fn main() {
             .with_transform(Mat::identity().scale(0.75, 0.8, 1))
             .with_material(Material {
                 color: Color::new(1, 0.2, 1),
+                ambient: 0.2,
                 ..Default::default()
             }),
     ));
     world.add(Box::new(
         Sphere::default()
-            .with_transform(Mat::identity().scale(0.5, 0.5, 0.5).translate(-0.75, 0, 0))
+            .with_transform(Mat::identity().scale(0.5, 0.5, 0.5).translate(-0.75, 0, -1))
             .with_material(Material {
                 color: Color::new(0.3, 0.8, 0.1),
+                ambient: 0.2,
                 ..Default::default()
             }),
     ));
@@ -35,7 +37,8 @@ fn main() {
                     .translate(0.75, 0, -0.9),
             )
             .with_material(Material {
-                color: Color::new(0.3, 0.8, 0.1),
+                color: Color::new(0.8, 0.8, 0.1),
+                ambient: 0.2,
                 ..Default::default()
             }),
     ));

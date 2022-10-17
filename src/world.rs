@@ -59,14 +59,35 @@ impl World {
         (point, eyev, normalv)
     }
 
+    fn point_is_shadowed(&self, point: Tup) -> bool {
+        let to_light = self.light.position - point;
+        let to_light_norm = to_light.normalize();
+        // move 0.01 along the ray to escape the object on which point
+        // is situated
+        let to_light_ray = Ray::new(point + to_light_norm * 0.01, to_light_norm);
+
+        let mut inters = Intersections::default();
+        self.intersect(&to_light_ray, &mut inters);
+        if let Some(hit) = inters.hit() {
+            hit.t < to_light.magnitude()
+        } else {
+            false
+        }
+    }
+
     /// Determine the color received by an eye at the origin of the given ray.
     pub fn color_at(&self, ray: &Ray) -> Color {
         let mut inters = Intersections::default();
         self.intersect(ray, &mut inters);
         if let Some(hit) = inters.hit() {
             let (point, eyev, normalv) = Self::precompute(hit, ray);
-            self.light
-                .lighting(hit.obj.material(), point, eyev, normalv)
+            self.light.lighting(
+                hit.obj.material(),
+                point,
+                eyev,
+                normalv,
+                self.point_is_shadowed(point),
+            )
         } else {
             Color::black()
         }
@@ -176,5 +197,33 @@ mod test {
         ));
         let r = Ray::new(Tup::point(0, 0, 0.75), Tup::vector(0, 0, -1));
         assert_relative_eq!(w.color_at(&r), Color::white());
+    }
+
+    #[test]
+    fn no_shadow_when_nothing_collinear() {
+        let w = World::test_world();
+        let p = Tup::point(0, 0, -5);
+        assert!(!w.point_is_shadowed(p));
+    }
+
+    #[test]
+    fn shadow_when_obj_intervenes() {
+        let w = World::test_world();
+        let p = Tup::point(10, -10, 10);
+        assert!(w.point_is_shadowed(p));
+    }
+
+    #[test]
+    fn no_shadow_when_obj_behind_light() {
+        let w = World::test_world();
+        let p = Tup::point(-20, 20, -20);
+        assert!(!w.point_is_shadowed(p));
+    }
+
+    #[test]
+    fn no_shadow_when_obj_behind_point() {
+        let w = World::test_world();
+        let p = Tup::point(-2, 2, -2);
+        assert!(!w.point_is_shadowed(p));
     }
 }

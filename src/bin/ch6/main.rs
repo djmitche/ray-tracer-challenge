@@ -31,7 +31,7 @@ fn main() {
                 let hit_pt = ray.position(inter.t);
                 let normal = inter.obj.normal(hit_pt);
                 let eye = -ray.direction;
-                c[(x, y)] = light.lighting(inter.obj.material(), hit_pt, eye, normal);
+                c[(x, y)] = light.lighting(inter.obj.material(), hit_pt, eye, normal, false);
             } else {
                 c[(x, y)] = Color::new(0, 0, 1);
             }
