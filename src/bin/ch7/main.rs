@@ -1,13 +1,11 @@
+use core::f64::consts::PI;
 use ray_tracer_challenge::*;
 
 const SIZE: usize = 500;
 const CAMERA_Z: f64 = -5.0;
 const WALL_Z: f64 = 10.0;
-const WALL_SIZE: f64 = 7.0;
 
 fn main() {
-    let mut c = Canvas::new(SIZE, SIZE);
-
     let mut world = World::default();
     world.light = Light::new_point(Point::new(-10, 10, -10), Color::white());
 
@@ -42,19 +40,18 @@ fn main() {
                 ..Default::default()
             }),
     ));
-    let origin = Point::new(0, 0, CAMERA_Z);
 
-    for x in 0..SIZE {
-        let wall_x = (x as f64 / SIZE as f64) * WALL_SIZE - WALL_SIZE / 2.0;
-        for y in 0..SIZE {
-            let wall_y = (y as f64 / SIZE as f64) * WALL_SIZE - WALL_SIZE / 2.0;
-            let wall_pt = Point::new(wall_x, -wall_y, WALL_Z);
-            let ray = Ray::new(origin, (wall_pt - origin).normalize());
+    let camera = Camera::new(
+        SIZE,
+        SIZE,
+        PI / 3.0,
+        Point::new(0, 0, CAMERA_Z),
+        Point::new(0, 0, WALL_Z),
+        Vector::new(0, 1, 0),
+    );
 
-            c[(x, y)] = world.color_at(&ray);
-        }
-    }
-
-    c.write_ppm_file("/tmp/ch7.ppm")
+    camera
+        .render(&world)
+        .write_ppm_file("/tmp/ch7.ppm")
         .expect("could not write PPM file");
 }

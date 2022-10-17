@@ -1,4 +1,5 @@
-use crate::{mat4, spaces, Color, Mat, Point, Ray, Vector, World};
+use crate::{mat4, spaces, Canvas, Color, Mat, Point, Ray, Vector, World};
+use rayon::prelude::*;
 
 /// Camera represents a view onto the world space.
 ///
@@ -95,6 +96,20 @@ impl Camera {
     pub fn color_at(&self, x: usize, y: usize, world: &World) -> Color {
         let ray = self.ray_for_pixel(x, y);
         world.color_at(&ray)
+    }
+
+    /// Create a canvas containing the image
+    pub fn render(&self, world: &World) -> Canvas {
+        let mut canvas = Canvas::new(self.hsize, self.vsize);
+        for (x, y, c) in self
+            .into_iter()
+            .par_bridge()
+            .map(move |(x, y)| (x, y, self.color_at(x, y, world)))
+            .collect::<Vec<_>>()
+        {
+            canvas[(x, y)] = c;
+        }
+        canvas
     }
 }
 
