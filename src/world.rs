@@ -3,7 +3,7 @@ use crate::{Color, Intersection, Intersections, Light, Object, Ray, Tup};
 #[derive(Debug)]
 pub struct World {
     pub light: Light,
-    pub objects: Vec<Box<dyn Object>>,
+    pub objects: Vec<Box<dyn Object + Sync + Send>>,
 }
 
 impl Default for World {
@@ -16,7 +16,7 @@ impl Default for World {
 }
 
 impl World {
-    pub fn add(&mut self, obj: Box<dyn Object>) {
+    pub fn add(&mut self, obj: Box<dyn Object + Sync + Send>) {
         self.objects.push(obj);
     }
 

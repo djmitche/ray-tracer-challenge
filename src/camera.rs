@@ -5,6 +5,12 @@ use crate::{mat4, Color, Mat, Ray, Tup, World};
 /// The "image" is assumed to be a rectangle centered on a point one unit
 /// in front of the eye.
 pub struct Camera {
+    /// Horizontal pixel count
+    hsize: usize,
+
+    /// Vertical pixel count
+    vsize: usize,
+
     /// matrix translating camera coordinates to world coordinates
     inv_transform: Mat<4>,
 
@@ -29,6 +35,8 @@ impl Camera {
         };
         let pixel_size = (half_width * 2.0 / hsize as f64) as f64;
         Self {
+            hsize,
+            vsize,
             inv_transform: Self::view_transform(from, to, up).inverse(),
             pixel_size,
             half_width,
@@ -69,9 +77,49 @@ impl Camera {
         Ray::new(origin, direction)
     }
 
+    /// Determine the color at the given x and y coordinates of the image.
     pub fn color_at(&self, x: usize, y: usize, world: &World) -> Color {
         let ray = self.ray_for_pixel(x, y);
         world.color_at(&ray)
+    }
+}
+
+impl IntoIterator for &Camera {
+    type Item = (usize, usize);
+    type IntoIter = PixelIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        PixelIterator {
+            hsize: self.hsize,
+            vsize: self.vsize,
+            nextx: 0,
+            nexty: 0,
+        }
+    }
+}
+
+pub struct PixelIterator {
+    hsize: usize,
+    vsize: usize,
+    nextx: usize,
+    nexty: usize,
+}
+
+impl Iterator for PixelIterator {
+    type Item = (usize, usize);
+    fn next(&mut self) -> Option<Self::Item> {
+        let rv = if self.nexty < self.vsize {
+            (self.nextx, self.nexty)
+        } else {
+            return None;
+        };
+
+        self.nextx += 1;
+        if self.nextx >= self.hsize {
+            self.nextx = 0;
+            self.nexty += 1;
+        }
+        Some(rv)
     }
 }
 

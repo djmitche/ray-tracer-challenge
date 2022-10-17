@@ -1,10 +1,11 @@
 use core::f64::consts::PI;
 use ray_tracer_challenge::*;
+use rayon::prelude::*;
 
 const SIZE: usize = 2000;
 
 fn main() {
-    let mut c = Canvas::new(SIZE, SIZE);
+    let mut canvas = Canvas::new(SIZE, SIZE);
 
     let mut world = World::default();
     world.light = Light::new_point(Tup::point(-10, 10, -10), Color::new(1, 1, 1));
@@ -99,17 +100,23 @@ fn main() {
         SIZE,
         SIZE,
         PI / 3.0,
-        Tup::point(0, 1.5, -5.0),
+        Tup::point(0, 1.9, -5),
         Tup::point(0, 1, 0),
         Tup::vector(0, 1, 0),
     );
 
-    for x in 0..SIZE {
-        for y in 0..SIZE {
-            c[(x, y)] = camera.color_at(x, y, &world);
-        }
+    let camref = &camera;
+    let worldref = &world;
+    for (x, y, c) in camref
+        .into_iter()
+        .par_bridge()
+        .map(move |(x, y)| (x, y, camref.color_at(x, y, worldref)))
+        .collect::<Vec<_>>()
+    {
+        canvas[(x, y)] = c;
     }
 
-    c.write_ppm_file("/tmp/ch7b.ppm")
+    canvas
+        .write_ppm_file(&format!("/tmp/ch7b.ppm"))
         .expect("could not write PPM file");
 }
