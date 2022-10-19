@@ -3,7 +3,7 @@ use crate::{spaces, Color, Intersection, Intersections, Light, Object, Point, Ra
 #[derive(Debug)]
 pub struct World {
     pub light: Light,
-    pub objects: Vec<Box<dyn Object + Sync + Send>>,
+    pub objects: Vec<Object>,
 }
 
 impl Default for World {
@@ -16,7 +16,7 @@ impl Default for World {
 }
 
 impl World {
-    pub fn add(&mut self, obj: Box<dyn Object + Sync + Send>) {
+    pub fn add(&mut self, obj: Object) {
         self.objects.push(obj);
     }
 
@@ -25,17 +25,17 @@ impl World {
     pub(crate) fn test_world() -> Self {
         use crate::{Mat, Material, Sphere};
         let mut w = World::default();
-        w.add(Box::new(Sphere::default().with_material(Material {
+        w.add(Object::new(Sphere).with_material(Material {
             color: Color::new(0.8, 1.0, 0.6),
             diffuse: 0.7,
             specular: 0.2,
             ..Default::default()
-        })));
-        w.add(Box::new(
-            Sphere::default()
+        }));
+        w.add(
+            Object::new(Sphere)
                 .with_transform(Mat::identity().scale(0.5, 0.5, 0.5))
                 .with_material(Material::default()),
-        ));
+        );
         w
     }
 
@@ -89,7 +89,7 @@ impl World {
         if let Some(hit) = inters.hit() {
             let (point, eyev, normalv) = Self::precompute(hit, ray);
             self.light.lighting(
-                hit.obj.material(),
+                &hit.obj.material,
                 point,
                 eyev,
                 normalv,
@@ -110,7 +110,7 @@ mod test {
     #[test]
     fn precompute_state() {
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
-        let shape = Sphere::default();
+        let shape = Object::new(Sphere);
         let i = Intersection {
             obj: &shape,
             t: 4.0,
@@ -125,7 +125,7 @@ mod test {
     #[test]
     fn precompute_state_inside() {
         let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
-        let shape = Sphere::default();
+        let shape = Object::new(Sphere);
         let i = Intersection {
             obj: &shape,
             t: 1.0,
@@ -187,21 +187,21 @@ mod test {
     #[test]
     fn color_at_behind_ray() {
         let mut w = World::default();
-        w.add(Box::new(Sphere::default().with_material(Material {
+        w.add(Object::new(Sphere).with_material(Material {
             color: Color::new(0.8, 1.0, 0.6),
             diffuse: 0.7,
             specular: 0.2,
             ambient: 1.0,
             ..Default::default()
-        })));
-        w.add(Box::new(
-            Sphere::default()
+        }));
+        w.add(
+            Object::new(Sphere)
                 .with_transform(Mat::identity().scale(0.5, 0.5, 0.5))
                 .with_material(Material {
                     ambient: 1.0,
                     ..Default::default()
                 }),
-        ));
+        );
         let r = Ray::new(Point::new(0, 0, 0.75), Vector::new(0, 0, -1));
         assert_relative_eq!(w.color_at(&r), Color::white());
     }

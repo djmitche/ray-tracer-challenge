@@ -4,15 +4,16 @@ use crate::Object;
 /// an object.
 #[derive(Debug, Copy, Clone)]
 pub struct Intersection<'o> {
-    /// The position along the ray at which the intersection occurs
+    /// The position along the ray at which the intersection occurs, as a
+    /// multiple of the length of the ray.
     pub t: f64,
 
     /// The intersected object
-    pub obj: &'o dyn Object,
+    pub obj: &'o Object,
 }
 
 impl<'o> Intersection<'o> {
-    pub fn new(t: impl Into<f64>, obj: &'o dyn Object) -> Self {
+    pub fn new(t: impl Into<f64>, obj: &'o Object) -> Self {
         Self { t: t.into(), obj }
     }
 }
@@ -20,13 +21,20 @@ impl<'o> Intersection<'o> {
 /// Itersections maintains a mutable set of Intersection instances
 #[derive(Debug)]
 pub struct Intersections<'o> {
+    /// the object currently being intersected
+    cur_object: Option<&'o Object>,
+
+    /// Recorded hits
     hits: Vec<Intersection<'o>>,
+
+    /// Tracking for whether this set of hits is sorted
     sorted: bool,
 }
 
 impl Default for Intersections<'_> {
     fn default() -> Self {
         Self {
+            cur_object: None,
             hits: Vec::new(),
             sorted: true,
         }
@@ -34,9 +42,22 @@ impl Default for Intersections<'_> {
 }
 
 impl<'o> Intersections<'o> {
-    /// Add a new intersection to this set.
-    pub fn add(&mut self, inter: Intersection<'o>) {
-        self.hits.push(inter);
+    /// Set the object that will be associated with subsequent `add` calls
+    pub fn set_object(&mut self, object: &'o Object) {
+        self.cur_object = Some(object);
+    }
+
+    /// Reset the current object
+    pub fn unset_object(&mut self) {
+        self.cur_object = None;
+    }
+
+    /// Add a new intersection to this set, using the current object
+    pub fn add(&mut self, t: f64) {
+        self.hits.push(Intersection::new(
+            t,
+            self.cur_object.expect("expected a current object"),
+        ));
         self.sorted = false;
     }
 
@@ -67,13 +88,12 @@ impl<'o> Intersections<'o> {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::Sphere;
+    use crate::*;
     use approx::*;
 
     #[test]
     fn intersection_contains_object() {
-        let s = Sphere::default();
+        let s = Object::new(Sphere);
         let i = Intersection::new(1, &s);
         assert_relative_eq!(i.t, 1.0);
         // can't test equality of dyn refs
@@ -82,39 +102,43 @@ mod test {
 
     #[test]
     fn hit_all_positive_t() {
-        let s = Sphere::default();
+        let s = Object::new(Sphere);
         let mut inters = Intersections::default();
-        inters.add(Intersection::new(1, &s));
-        inters.add(Intersection::new(2, &s));
+        inters.set_object(&s);
+        inters.add(1.0);
+        inters.add(2.0);
         assert_relative_eq!(inters.hit().expect("a hit").t, 1.0);
     }
 
     #[test]
     fn hit_some_negative() {
-        let s = Sphere::default();
+        let s = Object::new(Sphere);
         let mut inters = Intersections::default();
-        inters.add(Intersection::new(-1, &s));
-        inters.add(Intersection::new(1, &s));
+        inters.set_object(&s);
+        inters.add(-1.0);
+        inters.add(1.0);
         assert_relative_eq!(inters.hit().expect("a hit").t, 1.0);
     }
 
     #[test]
     fn hit_all_negative() {
-        let s = Sphere::default();
+        let s = Object::new(Sphere);
         let mut inters = Intersections::default();
-        inters.add(Intersection::new(-1, &s));
-        inters.add(Intersection::new(-2, &s));
+        inters.set_object(&s);
+        inters.add(-1.0);
+        inters.add(-2.0);
         assert!(inters.hit().is_none());
     }
 
     #[test]
     fn hit_lowest_nonneg() {
-        let s = Sphere::default();
+        let s = Object::new(Sphere);
         let mut inters = Intersections::default();
-        inters.add(Intersection::new(5, &s));
-        inters.add(Intersection::new(7, &s));
-        inters.add(Intersection::new(-3, &s));
-        inters.add(Intersection::new(2, &s));
+        inters.set_object(&s);
+        inters.add(5.0);
+        inters.add(7.0);
+        inters.add(-3.0);
+        inters.add(2.0);
         assert_relative_eq!(inters.hit().expect("a hit").t, 2.0);
     }
 }

@@ -9,26 +9,26 @@ fn main() {
     let mut world = World::default();
     world.light = Light::new_point(Point::new(-10, 10, -10), Color::white());
 
-    world.add(Box::new(
-        Sphere::default()
+    world.add(
+        Object::new(Sphere)
             .with_transform(Mat::identity().scale(0.75, 0.8, 1))
             .with_material(Material {
                 color: Color::new(1, 0.2, 1),
                 ambient: 0.2,
                 ..Default::default()
             }),
-    ));
-    world.add(Box::new(
-        Sphere::default()
+    );
+    world.add(
+        Object::new(Sphere)
             .with_transform(Mat::identity().scale(0.5, 0.5, 0.5).translate(-0.75, 0, -1))
             .with_material(Material {
                 color: Color::new(0.3, 0.8, 0.1),
                 ambient: 0.2,
                 ..Default::default()
             }),
-    ));
-    world.add(Box::new(
-        Sphere::default()
+    );
+    world.add(
+        Object::new(Sphere)
             .with_transform(
                 Mat::identity()
                     .scale(0.5, 0.5, 0.5)
@@ -39,7 +39,7 @@ fn main() {
                 ambient: 0.2,
                 ..Default::default()
             }),
-    ));
+    );
 
     let camera = Camera::new(
         SIZE,

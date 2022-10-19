@@ -8,7 +8,7 @@ const WALL_SIZE: f64 = 7.0;
 fn main() {
     let mut c = Canvas::new(SIZE, SIZE);
 
-    let s = Sphere::default()
+    let s = Object::new(Sphere)
         .with_transform(Mat::identity().scale(0.75, 0.8, 1))
         .with_material(Material {
             color: Color::new(1, 0.2, 1),
@@ -31,7 +31,7 @@ fn main() {
                 let hit_pt = ray.position(inter.t);
                 let normal = inter.obj.normal(hit_pt);
                 let eye = -ray.direction;
-                c[(x, y)] = light.lighting(inter.obj.material(), hit_pt, eye, normal, false);
+                c[(x, y)] = light.lighting(&inter.obj.material, hit_pt, eye, normal, false);
             } else {
                 c[(x, y)] = Color::new(0, 0, 1);
             }

@@ -9,7 +9,7 @@ fn main() {
     let mut c = Canvas::new(SIZE, SIZE);
 
     let s =
-        Sphere::default().with_transform(Mat::identity().scale(1.2, 0.8, 1).translate(0.1, 0, 0));
+        Object::new(Sphere).with_transform(Mat::identity().scale(1.2, 0.8, 1).translate(0.1, 0, 0));
     let origin = Point::new(0, 0, CAMERA_Z);
 
     for x in 0..SIZE {

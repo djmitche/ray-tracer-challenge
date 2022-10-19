@@ -11,18 +11,18 @@ fn main() {
     world.light = Light::new_point(Point::new(-10, 10, -10), Color::new(1, 1, 1));
 
     // floor
-    world.add(Box::new(
-        Sphere::default()
+    world.add(
+        Object::new(Sphere)
             .with_transform(Mat::identity().scale(10, 0.01, 10))
             .with_material(Material {
                 specular: 0.0,
                 ..Default::default()
             }),
-    ));
+    );
 
     // left_wall
-    world.add(Box::new(
-        Sphere::default()
+    world.add(
+        Object::new(Sphere)
             .with_transform(
                 Mat::identity()
                     .scale(10, 0.01, 10)
@@ -34,11 +34,11 @@ fn main() {
                 specular: 0.0,
                 ..Default::default()
             }),
-    ));
+    );
 
     // right_wall
-    world.add(Box::new(
-        Sphere::default()
+    world.add(
+        Object::new(Sphere)
             .with_transform(
                 Mat::identity()
                     .scale(10, 0.01, 10)
@@ -50,11 +50,11 @@ fn main() {
                 specular: 0.0,
                 ..Default::default()
             }),
-    ));
+    );
 
     // middle
-    world.add(Box::new(
-        Sphere::default()
+    world.add(
+        Object::new(Sphere)
             .with_transform(Mat::identity().translate(-0.5, 1, 0.5))
             .with_material(Material {
                 color: Color::new(0.1, 1, 0.5),
@@ -62,11 +62,11 @@ fn main() {
                 specular: 0.3,
                 ..Default::default()
             }),
-    ));
+    );
 
     // right
-    world.add(Box::new(
-        Sphere::default()
+    world.add(
+        Object::new(Sphere)
             .with_transform(
                 Mat::identity()
                     .scale(0.5, 0.5, 0.5)
@@ -78,11 +78,11 @@ fn main() {
                 specular: 0.3,
                 ..Default::default()
             }),
-    ));
+    );
 
     // left
-    world.add(Box::new(
-        Sphere::default()
+    world.add(
+        Object::new(Sphere)
             .with_transform(
                 Mat::identity()
                     .scale(0.33, 0.33, 0.33)
@@ -94,7 +94,7 @@ fn main() {
                 specular: 0.3,
                 ..Default::default()
             }),
-    ));
+    );
 
     let camera = Camera::new(
         SIZE,
