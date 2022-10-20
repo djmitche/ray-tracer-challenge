@@ -1,5 +1,6 @@
 use crate::{spaces, Intersections, ObjectInner, Point, Ray, Vector};
 
+/// A unit sphere centered at the origin
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Sphere;
 

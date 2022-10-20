@@ -7,8 +7,8 @@ mod material;
 mod math;
 mod object;
 mod ray;
+mod shapes;
 pub mod spaces;
-mod sphere;
 mod world;
 
 pub use camera::*;
@@ -20,5 +20,5 @@ pub use material::*;
 pub use math::*;
 pub use object::*;
 pub use ray::Ray;
-pub use sphere::Sphere;
+pub use shapes::*;
 pub use world::*;
