@@ -17,6 +17,7 @@ impl Light {
     /// Calculate the lighting for the given args.
     pub fn lighting(
         &self,
+        color: Color,
         material: &Material,
         point: Point<spaces::World>,
         eyev: Vector<spaces::World>,
@@ -24,7 +25,7 @@ impl Light {
         in_shadow: bool,
     ) -> Color {
         // combine surface color and light color
-        let eff_color = material.color * self.intensity;
+        let eff_color = color * self.intensity;
 
         // get the direction from the point to the light source
         let lightv = (self.position - point).normalize();
@@ -78,7 +79,7 @@ mod test {
         let normalv = Vector::new(0, 0, -1);
         let light = Light::new_point(Point::new(0, 0, -10), Color::white());
         assert_relative_eq!(
-            light.lighting(&m, position, eyev, normalv, false),
+            light.lighting(Color::white(), &m, position, eyev, normalv, false),
             Color::new(1.9, 1.9, 1.9)
         );
     }
@@ -91,7 +92,7 @@ mod test {
         let normalv = Vector::new(0, 0, -1);
         let light = Light::new_point(Point::new(0, 0, -10), Color::white());
         assert_relative_eq!(
-            light.lighting(&m, position, eyev, normalv, false),
+            light.lighting(Color::white(), &m, position, eyev, normalv, false),
             Color::new(1.0, 1.0, 1.0)
         );
     }
@@ -104,7 +105,7 @@ mod test {
         let normalv = Vector::new(0, 0, -1);
         let light = Light::new_point(Point::new(0, 10, -10), Color::white());
         assert_relative_eq!(
-            light.lighting(&m, position, eyev, normalv, false),
+            light.lighting(Color::white(), &m, position, eyev, normalv, false),
             Color::new(0.7363961030678927, 0.7363961030678927, 0.7363961030678927)
         );
     }
@@ -117,7 +118,7 @@ mod test {
         let normalv = Vector::new(0, 0, -1);
         let light = Light::new_point(Point::new(0, 10, -10), Color::white());
         assert_relative_eq!(
-            light.lighting(&m, position, eyev, normalv, false),
+            light.lighting(Color::white(), &m, position, eyev, normalv, false),
             Color::new(1.6363961030678928, 1.6363961030678928, 1.6363961030678928)
         );
     }
@@ -130,7 +131,7 @@ mod test {
         let normalv = Vector::new(0, 0, -1);
         let light = Light::new_point(Point::new(0, 0, 10), Color::white());
         assert_relative_eq!(
-            light.lighting(&m, position, eyev, normalv, false),
+            light.lighting(Color::white(), &m, position, eyev, normalv, false),
             Color::new(0.1, 0.1, 0.1)
         );
     }
@@ -143,7 +144,7 @@ mod test {
         let normalv = Vector::new(0, 0, -1);
         let light = Light::new_point(Point::new(0, 0, -10), Color::white());
         assert_relative_eq!(
-            light.lighting(&m, position, eyev, normalv, true),
+            light.lighting(Color::white(), &m, position, eyev, normalv, true),
             Color::new(0.1, 0.1, 0.1),
         );
     }

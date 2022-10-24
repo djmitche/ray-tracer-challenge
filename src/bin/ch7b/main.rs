@@ -57,7 +57,7 @@ fn main() {
         Object::new(Sphere)
             .with_transform(Mat::identity().translate(-0.5, 1, 0.5))
             .with_material(Material {
-                color: Color::new(0.1, 1, 0.5),
+                pattern: Color::new(0.1, 1, 0.5).into(),
                 diffuse: 0.7,
                 specular: 0.3,
                 ..Default::default()
@@ -73,7 +73,7 @@ fn main() {
                     .translate(1.5, 0.5, -0.5),
             )
             .with_material(Material {
-                color: Color::new(0.5, 1, 0.1),
+                pattern: Color::new(0.5, 1, 0.1).into(),
                 diffuse: 0.7,
                 specular: 0.3,
                 ..Default::default()
@@ -89,7 +89,7 @@ fn main() {
                     .translate(-1.5, 0.33, -0.75),
             )
             .with_material(Material {
-                color: Color::new(1, 0.8, 0.1),
+                pattern: Color::new(1, 0.8, 0.1).into(),
                 diffuse: 0.7,
                 specular: 0.3,
                 ..Default::default()

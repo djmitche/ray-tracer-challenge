@@ -20,3 +20,9 @@ impl Space for Object {}
 pub struct Camera;
 
 impl Space for Camera {}
+
+/// Pattern space is the standardized space in which the patterns are defined.
+#[derive(Default, PartialEq, Clone, Copy, Debug)]
+pub struct Pattern;
+
+impl Space for Pattern {}

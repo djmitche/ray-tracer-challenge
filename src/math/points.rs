@@ -29,6 +29,16 @@ impl<S: Space> Point<S> {
     pub fn as_vector(&self) -> Vector<S> {
         Vector::new(self.x, self.y, self.z)
     }
+
+    /// Convert the point to another space, in-place
+    pub fn as_space<S2: Space>(&self) -> Point<S2> {
+        Point {
+            x: self.x,
+            y: self.y,
+            z: self.z,
+            space: PhantomData,
+        }
+    }
 }
 
 impl<S: Space> AbsDiffEq for Point<S> {

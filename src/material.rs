@@ -1,9 +1,9 @@
-use crate::Color;
+use crate::{Color, Pattern};
 
 /// Material defines the relevant characteristics of a material.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug)]
 pub struct Material {
-    pub color: Color,
+    pub pattern: Pattern,
     pub ambient: f64,
     pub diffuse: f64,
     pub specular: f64,
@@ -13,7 +13,7 @@ pub struct Material {
 impl Default for Material {
     fn default() -> Self {
         Self {
-            color: Color::new(1, 1, 1),
+            pattern: Color::new(1, 1, 1).into(),
             ambient: 0.1,
             diffuse: 0.9,
             specular: 0.9,

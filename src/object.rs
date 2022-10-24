@@ -1,4 +1,4 @@
-use crate::{spaces, Intersections, Mat, Material, Point, Ray, Vector};
+use crate::{spaces, Color, Intersections, Mat, Material, Point, Ray, Vector};
 
 /// ObjectInnner defines methods to handle the particularities of an object, in object space.
 pub trait ObjectInner: std::fmt::Debug + Sync + Send {
@@ -59,12 +59,31 @@ impl Object {
         inters.unset_object();
     }
 
-    /// Calculate the normal of the given point on the surface of this object.
-    pub fn normal(&self, point: Point<spaces::World>) -> Vector<spaces::World> {
+    /// Calculate the normal of the given point on the surface of this object and the object's
+    /// color at that point.  These require some shared intermediate values and are best calculated
+    /// at the same time.
+    pub fn normal_and_color(&self, point: Point<spaces::World>) -> (Vector<spaces::World>, Color) {
         let obj_point = self.transform * point;
+
         let obj_normal = self.inner.normal(obj_point);
         let world_normal = self.transp_transform * obj_normal;
-        world_normal.normalize()
+        let normal = world_normal.normalize();
+
+        let color = self.material.pattern.color_at(obj_point);
+
+        (normal, color)
+    }
+
+    /// Get only the normal
+    #[cfg(test)]
+    pub fn normal(&self, point: Point<spaces::World>) -> Vector<spaces::World> {
+        self.normal_and_color(point).0
+    }
+
+    /// Get only the color
+    #[cfg(test)]
+    pub fn color_at(&self, point: Point<spaces::World>) -> Color {
+        self.normal_and_color(point).1
     }
 }
 
@@ -92,10 +111,11 @@ mod test {
 
     #[test]
     fn with_material() {
-        let o = Object::new(Sphere).with_material(Material {
+        let mat = Material {
             ambient: 13.0,
             ..Default::default()
-        });
+        };
+        let o = Object::new(Sphere).with_material(mat);
         assert_relative_eq!(o.transform, Mat::identity());
         assert_relative_eq!(o.transp_transform, Mat::identity());
         assert_relative_eq!(o.material.ambient, 13.0);

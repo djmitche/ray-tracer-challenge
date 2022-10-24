@@ -11,7 +11,7 @@ fn main() {
     let s = Object::new(Sphere)
         .with_transform(Mat::identity().scale(0.75, 0.8, 1))
         .with_material(Material {
-            color: Color::new(1, 0.2, 1),
+            pattern: Color::new(1, 0.2, 1).into(),
             ..Default::default()
         });
     let origin = Point::new(0, 0, CAMERA_Z);
@@ -29,9 +29,16 @@ fn main() {
             s.intersect(&ray, &mut inters);
             if let Some(inter) = inters.hit() {
                 let hit_pt = ray.position(inter.t);
-                let normal = inter.obj.normal(hit_pt);
+                let (normal, _) = inter.obj.normal_and_color(hit_pt);
                 let eye = -ray.direction;
-                c[(x, y)] = light.lighting(&inter.obj.material, hit_pt, eye, normal, false);
+                c[(x, y)] = light.lighting(
+                    Color::white(),
+                    &inter.obj.material,
+                    hit_pt,
+                    eye,
+                    normal,
+                    false,
+                );
             } else {
                 c[(x, y)] = Color::new(0, 0, 1);
             }

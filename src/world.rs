@@ -26,7 +26,7 @@ impl World {
         use crate::{Mat, Material, Sphere};
         let mut w = World::default();
         w.add(Object::new(Sphere).with_material(Material {
-            color: Color::new(0.8, 1.0, 0.6),
+            pattern: Color::new(0.8, 1.0, 0.6).into(),
             diffuse: 0.7,
             specular: 0.2,
             ..Default::default()
@@ -55,15 +55,16 @@ impl World {
         Point<spaces::World>,
         Vector<spaces::World>,
         Vector<spaces::World>,
+        Color,
     ) {
         let point = ray.position(hit.t);
         let eyev = -ray.direction;
-        let mut normalv = hit.obj.normal(point);
+        let (mut normalv, color) = hit.obj.normal_and_color(point);
         if normalv.dot(eyev) < 0.0 {
             // use the inside surface, with the opposite normal
             normalv = -normalv;
         }
-        (point, eyev, normalv)
+        (point, eyev, normalv, color)
     }
 
     fn point_is_shadowed(&self, point: Point<spaces::World>) -> bool {
@@ -87,8 +88,9 @@ impl World {
         let mut inters = Intersections::default();
         self.intersect(ray, &mut inters);
         if let Some(hit) = inters.hit() {
-            let (point, eyev, normalv) = Self::precompute(hit, ray);
+            let (point, eyev, normalv, color) = Self::precompute(hit, ray);
             self.light.lighting(
+                color,
                 &hit.obj.material,
                 point,
                 eyev,
@@ -116,7 +118,7 @@ mod test {
             t: 4.0,
         };
 
-        let (point, eyev, normalv) = World::precompute(&i, &r);
+        let (point, eyev, normalv, _) = World::precompute(&i, &r);
         assert_relative_eq!(point, Point::new(0, 0, -1));
         assert_relative_eq!(eyev, Vector::new(0, 0, -1));
         assert_relative_eq!(normalv, Vector::new(0, 0, -1));
@@ -131,7 +133,7 @@ mod test {
             t: 1.0,
         };
 
-        let (point, eyev, normalv) = World::precompute(&i, &r);
+        let (point, eyev, normalv, _) = World::precompute(&i, &r);
         assert_relative_eq!(point, Point::new(0, 0, 1));
         assert_relative_eq!(eyev, Vector::new(0, 0, -1));
         assert_relative_eq!(normalv, Vector::new(0, 0, -1));
@@ -188,7 +190,7 @@ mod test {
     fn color_at_behind_ray() {
         let mut w = World::default();
         w.add(Object::new(Sphere).with_material(Material {
-            color: Color::new(0.8, 1.0, 0.6),
+            pattern: Color::new(0.8, 1.0, 0.6).into(),
             diffuse: 0.7,
             specular: 0.2,
             ambient: 1.0,
