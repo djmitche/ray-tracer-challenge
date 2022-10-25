@@ -23,6 +23,9 @@ pub struct Camera {
 
     /// world-space size of a pixel
     pixel_size: f64,
+
+    /// number of times to oversample each pixel
+    oversample: usize,
 }
 
 impl Camera {
@@ -33,6 +36,7 @@ impl Camera {
         from: Point<spaces::World>,
         to: Point<spaces::World>,
         up: Vector<spaces::World>,
+        oversample: usize,
     ) -> Self {
         let half_view = (fov / 2.0).tan();
         let aspect = hsize as f64 / vsize as f64;
@@ -49,6 +53,7 @@ impl Camera {
             pixel_size,
             half_width,
             half_height,
+            oversample,
         }
     }
 
@@ -76,10 +81,10 @@ impl Camera {
             ]
     }
 
-    fn ray_for_pixel(&self, x: usize, y: usize) -> Ray<spaces::World> {
+    fn ray_for_pixel(&self, x: usize, y: usize, xover: f64, yover: f64) -> Ray<spaces::World> {
         // offset from edge of image to the _center_ of the pixel
-        let xoffset = (x as f64 + 0.5) * self.pixel_size;
-        let yoffset = (y as f64 + 0.5) * self.pixel_size;
+        let xoffset = (x as f64 + xover) * self.pixel_size;
+        let yoffset = (y as f64 + yover) * self.pixel_size;
 
         // untransformed coordinates of the pixel in world space
         let world_x = self.half_width - xoffset;
@@ -94,8 +99,17 @@ impl Camera {
 
     /// Determine the color at the given x and y coordinates of the image.
     pub fn color_at(&self, x: usize, y: usize, world: &World) -> Color {
-        let ray = self.ray_for_pixel(x, y);
-        world.color_at(&ray)
+        let mut acc = Color::black();
+
+        let overfactor = 1.0 / (self.oversample + 1) as f64;
+        for xo in 1..=self.oversample {
+            for yo in 1..=self.oversample {
+                let ray = self.ray_for_pixel(x, y, overfactor * xo as f64, overfactor * yo as f64);
+                acc = acc + world.color_at(&ray);
+            }
+        }
+
+        acc / (self.oversample * self.oversample) as f64
     }
 
     /// Create a canvas containing the image
@@ -220,6 +234,7 @@ mod test {
             Point::new(0, 0, 0),
             Point::new(0, 0, -1),
             Vector::new(0, 1, 0),
+            1,
         );
         //assert_eq!(cam.hsize, 160);
         //assert_eq!(cam.vsize, 120);
@@ -236,6 +251,7 @@ mod test {
             Point::new(0, 0, 0),
             Point::new(0, 0, -1),
             Vector::new(0, 1, 0),
+            1,
         );
         assert_relative_eq!(cam.pixel_size, 0.01);
     }
@@ -249,6 +265,7 @@ mod test {
             Point::new(0, 0, 0),
             Point::new(0, 0, -1),
             Vector::new(0, 1, 0),
+            1,
         );
         assert_relative_eq!(cam.pixel_size, 0.01);
     }
@@ -262,8 +279,9 @@ mod test {
             Point::new(0, 0, 0),
             Point::new(0, 0, -1),
             Vector::new(0, 1, 0),
+            1,
         );
-        let r = cam.ray_for_pixel(100, 50);
+        let r = cam.ray_for_pixel(100, 50, 0.5, 0.5);
         assert_relative_eq!(r.origin, Point::new(0, 0, 0));
         assert_relative_eq!(r.direction, Vector::new(0, 0, -1));
     }
@@ -277,8 +295,9 @@ mod test {
             Point::new(0, 0, 0),
             Point::new(0, 0, -1),
             Vector::new(0, 1, 0),
+            1,
         );
-        let r = cam.ray_for_pixel(0, 0);
+        let r = cam.ray_for_pixel(0, 0, 0.5, 0.5);
         assert_relative_eq!(r.origin, Point::new(0, 0, 0));
         assert_relative_eq!(
             r.direction,
@@ -296,8 +315,9 @@ mod test {
             Point::new(0, 2, -5),
             Point::new(halfsqrt2, 2, -halfsqrt2 - 5.0),
             Vector::new(0, 1, 0),
+            1,
         );
-        let r = cam.ray_for_pixel(100, 50);
+        let r = cam.ray_for_pixel(100, 50, 0.5, 0.5);
         assert_relative_eq!(r.origin, Point::new(0, 2, -5));
         // the math here doesn't quite work out to the level of precision
         // expected by assert_relative_eq's default epsilon

@@ -48,6 +48,7 @@ fn main() {
         Point::new(0, 0, CAMERA_Z),
         Point::new(0, 0, WALL_Z),
         Vector::new(0, 1, 0),
+        3,
     );
 
     camera

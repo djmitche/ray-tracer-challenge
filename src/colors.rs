@@ -117,6 +117,18 @@ impl std::ops::Mul<f64> for Color {
     }
 }
 
+impl std::ops::Div<f64> for Color {
+    type Output = Self;
+
+    fn div(self, other: f64) -> Self {
+        Self {
+            red: self.red / other,
+            green: self.green / other,
+            blue: self.blue / other,
+        }
+    }
+}
+
 impl std::ops::Mul for Color {
     type Output = Self;
 

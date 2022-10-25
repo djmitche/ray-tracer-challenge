@@ -103,6 +103,7 @@ fn main() {
         Point::new(0, 1.9, -5),
         Point::new(0, 1, 0),
         Vector::new(0, 1, 0),
+        3,
     );
 
     let camref = &camera;
