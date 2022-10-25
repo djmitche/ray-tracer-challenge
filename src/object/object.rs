@@ -1,9 +1,14 @@
-use crate::{spaces, Color, Intersections, Mat, Material, Point, Ray, Vector};
+use crate::{spaces, Color, Intersections, Mat, Material, ObjectIndex, Point, Ray, Vector};
 
 /// ObjectInnner defines methods to handle the particularities of an object, in object space.
 pub trait ObjectInner: std::fmt::Debug + Sync + Send {
     /// Intersect calculates the intersections of the given ray with this object.
-    fn intersect<'o>(&'o self, ray: Ray<spaces::Object>, inters: &mut Intersections<'o>);
+    fn intersect(
+        &self,
+        object_index: ObjectIndex,
+        ray: Ray<spaces::Object>,
+        inters: &mut Intersections,
+    );
 
     /// Normal calculates the normal of the given point on the surface of this object.
     fn normal(&self, point: Point<spaces::Object>) -> Vector<spaces::Object>;
@@ -52,11 +57,14 @@ impl Object {
     }
 
     /// Calculate the intersections of the given ray with this object.
-    pub fn intersect<'o>(&'o self, ray: &Ray<spaces::World>, inters: &mut Intersections<'o>) {
+    pub fn intersect(
+        &self,
+        object_index: ObjectIndex,
+        ray: &Ray<spaces::World>,
+        inters: &mut Intersections,
+    ) {
         let obj_ray = self.transform * *ray;
-        inters.set_object(self);
-        self.inner.intersect(obj_ray, inters);
-        inters.unset_object();
+        self.inner.intersect(object_index, obj_ray, inters);
     }
 
     /// Calculate the normal of the given point on the surface of this object and the object's
@@ -145,11 +153,11 @@ mod test {
             });
         let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 2));
         let mut inters = Intersections::default();
-        o.intersect(&r, &mut inters);
+        o.intersect(ObjectIndex::test_value(0), &r, &mut inters);
         // ray of length 2 hits sphere at 0, 0, 9, so t=4.5
         let hit = inters.hit().expect("intersection");
         assert_relative_eq!(hit.t, 4.5);
-        assert_relative_eq!(hit.obj.material.ambient, 13.0);
+        assert_eq!(hit.object_index, ObjectIndex::test_value(0));
     }
 
     #[test]
@@ -160,13 +168,13 @@ mod test {
 
         // ray hits halfway up the sphere.
         let mut inters = Intersections::default();
-        o.intersect(&r, &mut inters);
+        o.intersect(ObjectIndex::test_value(0), &r, &mut inters);
         let hit = inters.hit().expect("intersection");
         let p = r.position(hit.t);
 
         let n = o.normal(p);
 
         assert_relative_eq!(n.magnitude(), 1.0);
-        assert_relative_eq!(n, Vector::new(0, 0.27735009811261435, -0.9607689228305228));
+        assert_eq!(hit.object_index, ObjectIndex::test_value(0));
     }
 }

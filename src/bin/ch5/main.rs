@@ -20,7 +20,7 @@ fn main() {
             let r = Ray::new(origin, (position - origin).normalize());
 
             let mut inters = Intersections::default();
-            s.intersect(&r, &mut inters);
+            s.intersect(ObjectIndex::test_value(1), &r, &mut inters);
             if let Some(inter) = inters.hit() {
                 c[(x, y)] = Color::new((inter.t - 4.0) * 2.0, 1.0, 0);
             } else {

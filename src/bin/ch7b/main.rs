@@ -11,7 +11,7 @@ fn main() {
     world.light = Light::new_point(Point::new(-10, 10, -10), Color::new(1, 1, 1));
 
     // floor
-    world.add(
+    world.add_object(
         Object::new(Sphere)
             .with_transform(Mat::identity().scale(10, 0.01, 10))
             .with_material(Material {
@@ -21,7 +21,7 @@ fn main() {
     );
 
     // left_wall
-    world.add(
+    world.add_object(
         Object::new(Sphere)
             .with_transform(
                 Mat::identity()
@@ -37,7 +37,7 @@ fn main() {
     );
 
     // right_wall
-    world.add(
+    world.add_object(
         Object::new(Sphere)
             .with_transform(
                 Mat::identity()
@@ -53,7 +53,7 @@ fn main() {
     );
 
     // middle
-    world.add(
+    world.add_object(
         Object::new(Sphere)
             .with_transform(Mat::identity().translate(-0.5, 1, 0.5))
             .with_material(Material {
@@ -65,7 +65,7 @@ fn main() {
     );
 
     // right
-    world.add(
+    world.add_object(
         Object::new(Sphere)
             .with_transform(
                 Mat::identity()
@@ -81,7 +81,7 @@ fn main() {
     );
 
     // left
-    world.add(
+    world.add_object(
         Object::new(Sphere)
             .with_transform(
                 Mat::identity()

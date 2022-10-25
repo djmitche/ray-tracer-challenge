@@ -1,11 +1,16 @@
-use crate::{spaces, Intersections, ObjectInner, Point, Ray, Vector};
+use crate::{spaces, Intersections, ObjectIndex, ObjectInner, Point, Ray, Vector};
 
 /// A unit sphere centered at the origin
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Sphere;
 
 impl ObjectInner for Sphere {
-    fn intersect<'o>(&'o self, ray: Ray<spaces::Object>, inters: &mut Intersections<'o>) {
+    fn intersect(
+        &self,
+        object_index: ObjectIndex,
+        ray: Ray<spaces::Object>,
+        inters: &mut Intersections,
+    ) {
         let sphere_to_ray = ray.origin.as_vector();
         let a = ray.direction.dot(ray.direction);
         let b = 2.0 * ray.direction.dot(sphere_to_ray);
@@ -14,8 +19,8 @@ impl ObjectInner for Sphere {
 
         if discriminant >= 0.0 {
             let sqrt = discriminant.sqrt();
-            inters.add((-b - sqrt) / (a * 2.0));
-            inters.add((-b + sqrt) / (a * 2.0));
+            inters.add((-b - sqrt) / (a * 2.0), object_index);
+            inters.add((-b + sqrt) / (a * 2.0), object_index);
         }
     }
 
@@ -36,7 +41,7 @@ mod test {
         let s = Object::new(Sphere);
 
         let mut xs = Intersections::default();
-        s.intersect(&r, &mut xs);
+        s.intersect(ObjectIndex::test_value(1), &r, &mut xs);
         let mut it = xs.iter();
         assert_relative_eq!(it.next().expect("intersection").t, 4.0);
         assert_relative_eq!(it.next().expect("intersection").t, 6.0);
@@ -49,7 +54,7 @@ mod test {
         let s = Object::new(Sphere);
 
         let mut xs = Intersections::default();
-        s.intersect(&r, &mut xs);
+        s.intersect(ObjectIndex::test_value(1), &r, &mut xs);
         let mut it = xs.iter();
         assert_relative_eq!(it.next().expect("intersection").t, 5.0);
         assert_relative_eq!(it.next().expect("intersection").t, 5.0);
@@ -62,7 +67,7 @@ mod test {
         let s = Object::new(Sphere);
 
         let mut xs = Intersections::default();
-        s.intersect(&r, &mut xs);
+        s.intersect(ObjectIndex::test_value(1), &r, &mut xs);
         let mut it = xs.iter();
         assert!(it.next().is_none());
     }
@@ -73,7 +78,7 @@ mod test {
         let s = Object::new(Sphere);
 
         let mut xs = Intersections::default();
-        s.intersect(&r, &mut xs);
+        s.intersect(ObjectIndex::test_value(1), &r, &mut xs);
         let mut it = xs.iter();
         assert_relative_eq!(it.next().expect("intersection").t, -1.0);
         assert_relative_eq!(it.next().expect("intersection").t, 1.0);
@@ -86,7 +91,7 @@ mod test {
         let s = Object::new(Sphere);
 
         let mut xs = Intersections::default();
-        s.intersect(&r, &mut xs);
+        s.intersect(ObjectIndex::test_value(1), &r, &mut xs);
         let mut it = xs.iter();
         assert_relative_eq!(it.next().expect("intersection").t, -6.0);
         assert_relative_eq!(it.next().expect("intersection").t, -4.0);
@@ -99,7 +104,7 @@ mod test {
         let s = Object::new(Sphere).with_transform(Mat::identity().scale(2, 2, 2));
 
         let mut xs = Intersections::default();
-        s.intersect(&r, &mut xs);
+        s.intersect(ObjectIndex::test_value(1), &r, &mut xs);
         let mut it = xs.iter();
         assert_relative_eq!(it.next().expect("intersection").t, 3.0);
         assert_relative_eq!(it.next().expect("intersection").t, 7.0);
@@ -112,7 +117,7 @@ mod test {
         let s = Object::new(Sphere).with_transform(Mat::identity().translate(5, 0, 0));
 
         let mut xs = Intersections::default();
-        s.intersect(&r, &mut xs);
+        s.intersect(ObjectIndex::test_value(1), &r, &mut xs);
         let mut it = xs.iter();
         assert!(it.next().is_none());
     }

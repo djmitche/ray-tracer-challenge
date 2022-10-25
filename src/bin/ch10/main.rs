@@ -9,7 +9,7 @@ fn main() {
     let mut world = World::default();
     world.light = Light::new_point(Point::new(-10, 10, -10), Color::white());
 
-    world.add(
+    world.add_object(
         Object::new(Sphere)
             .with_transform(Mat::identity().scale(0.75, 0.8, 1))
             .with_material(Material {
@@ -18,7 +18,7 @@ fn main() {
                 ..Default::default()
             }),
     );
-    world.add(
+    world.add_object(
         Object::new(Sphere)
             .with_transform(Mat::identity().scale(0.5, 0.5, 0.5).translate(-0.75, 0, -1))
             .with_material(Material {
@@ -32,7 +32,7 @@ fn main() {
                 ..Default::default()
             }),
     );
-    world.add(
+    world.add_object(
         Object::new(Sphere)
             .with_transform(
                 Mat::identity()
@@ -47,7 +47,7 @@ fn main() {
             }),
     );
 
-    world.add(
+    world.add_object(
         Object::new(Plane)
             .with_transform(Mat::identity().translate(0, -0.5, 0))
             .with_material(Material {

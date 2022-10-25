@@ -1,9 +1,20 @@
 use crate::{spaces, Color, Intersection, Intersections, Light, Object, Point, Ray, Vector};
 
+/// An index into the objects in a world.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ObjectIndex(usize);
+
+impl ObjectIndex {
+    pub fn test_value(i: usize) -> ObjectIndex {
+        ObjectIndex(i)
+    }
+}
+
+/// World describes an entire world to be rendered.
 #[derive(Debug)]
 pub struct World {
     pub light: Light,
-    pub objects: Vec<Object>,
+    objects: Vec<Object>,
 }
 
 impl Default for World {
@@ -16,8 +27,11 @@ impl Default for World {
 }
 
 impl World {
-    pub fn add(&mut self, obj: Object) {
+    /// Add a new object to this world, returning its ObjectIndex.
+    pub fn add_object(&mut self, obj: Object) -> ObjectIndex {
+        let idx = ObjectIndex(self.objects.len());
         self.objects.push(obj);
+        idx
     }
 
     /// Create the "default_world" from the tests.
@@ -25,13 +39,13 @@ impl World {
     pub(crate) fn test_world() -> Self {
         use crate::{Mat, Material, Sphere};
         let mut w = World::default();
-        w.add(Object::new(Sphere).with_material(Material {
+        w.add_object(Object::new(Sphere).with_material(Material {
             pattern: Color::new(0.8, 1.0, 0.6).into(),
             diffuse: 0.7,
             specular: 0.2,
             ..Default::default()
         }));
-        w.add(
+        w.add_object(
             Object::new(Sphere)
                 .with_transform(Mat::identity().scale(0.5, 0.5, 0.5))
                 .with_material(Material::default()),
@@ -40,15 +54,16 @@ impl World {
     }
 
     /// Intersect the given ray with all objects in the world.
-    fn intersect<'o>(&'o self, ray: &Ray<spaces::World>, inters: &mut Intersections<'o>) {
-        for o in &self.objects {
-            o.intersect(ray, inters);
+    fn intersect(&self, ray: &Ray<spaces::World>, inters: &mut Intersections) {
+        for (i, o) in self.objects.iter().enumerate() {
+            o.intersect(ObjectIndex(i), ray, inters);
         }
     }
 
     /// Precompute the point of intersection, the eye vector, and the normal vector
     /// for the given hit of the given ray.
     fn precompute(
+        obj: &Object,
         hit: &Intersection,
         ray: &Ray<spaces::World>,
     ) -> (
@@ -59,7 +74,7 @@ impl World {
     ) {
         let point = ray.position(hit.t);
         let eyev = -ray.direction;
-        let (mut normalv, color) = hit.obj.normal_and_color(point);
+        let (mut normalv, color) = obj.normal_and_color(point);
         if normalv.dot(eyev) < 0.0 {
             // use the inside surface, with the opposite normal
             normalv = -normalv;
@@ -88,10 +103,11 @@ impl World {
         let mut inters = Intersections::default();
         self.intersect(ray, &mut inters);
         if let Some(hit) = inters.hit() {
-            let (point, eyev, normalv, color) = Self::precompute(hit, ray);
+            let obj = &self.objects[hit.object_index.0];
+            let (point, eyev, normalv, color) = Self::precompute(obj, hit, ray);
             self.light.lighting(
                 color,
-                &hit.obj.material,
+                &obj.material,
                 point,
                 eyev,
                 normalv,
@@ -114,11 +130,11 @@ mod test {
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
         let shape = Object::new(Sphere);
         let i = Intersection {
-            obj: &shape,
+            object_index: ObjectIndex::test_value(0),
             t: 4.0,
         };
 
-        let (point, eyev, normalv, _) = World::precompute(&i, &r);
+        let (point, eyev, normalv, _) = World::precompute(&shape, &i, &r);
         assert_relative_eq!(point, Point::new(0, 0, -1));
         assert_relative_eq!(eyev, Vector::new(0, 0, -1));
         assert_relative_eq!(normalv, Vector::new(0, 0, -1));
@@ -129,11 +145,11 @@ mod test {
         let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
         let shape = Object::new(Sphere);
         let i = Intersection {
-            obj: &shape,
+            object_index: ObjectIndex::test_value(0),
             t: 1.0,
         };
 
-        let (point, eyev, normalv, _) = World::precompute(&i, &r);
+        let (point, eyev, normalv, _) = World::precompute(&shape, &i, &r);
         assert_relative_eq!(point, Point::new(0, 0, 1));
         assert_relative_eq!(eyev, Vector::new(0, 0, -1));
         assert_relative_eq!(normalv, Vector::new(0, 0, -1));
@@ -189,14 +205,14 @@ mod test {
     #[test]
     fn color_at_behind_ray() {
         let mut w = World::default();
-        w.add(Object::new(Sphere).with_material(Material {
+        w.add_object(Object::new(Sphere).with_material(Material {
             pattern: Color::new(0.8, 1.0, 0.6).into(),
             diffuse: 0.7,
             specular: 0.2,
             ambient: 1.0,
             ..Default::default()
         }));
-        w.add(
+        w.add_object(
             Object::new(Sphere)
                 .with_transform(Mat::identity().scale(0.5, 0.5, 0.5))
                 .with_material(Material {

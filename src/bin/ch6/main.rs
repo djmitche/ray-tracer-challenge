@@ -26,19 +26,12 @@ fn main() {
             let ray = Ray::new(origin, (wall_pt - origin).normalize());
 
             let mut inters = Intersections::default();
-            s.intersect(&ray, &mut inters);
+            s.intersect(ObjectIndex::test_value(1), &ray, &mut inters);
             if let Some(inter) = inters.hit() {
                 let hit_pt = ray.position(inter.t);
-                let (normal, _) = inter.obj.normal_and_color(hit_pt);
+                let (normal, _) = s.normal_and_color(hit_pt);
                 let eye = -ray.direction;
-                c[(x, y)] = light.lighting(
-                    Color::white(),
-                    &inter.obj.material,
-                    hit_pt,
-                    eye,
-                    normal,
-                    false,
-                );
+                c[(x, y)] = light.lighting(Color::white(), &s.material, hit_pt, eye, normal, false);
             } else {
                 c[(x, y)] = Color::new(0, 0, 1);
             }
