@@ -1,7 +1,7 @@
 use core::f64::consts::PI;
 use ray_tracer_challenge::*;
 
-const SIZE: usize = 500;
+const SIZE: usize = 1000;
 const CAMERA_Z: f64 = -5.0;
 const WALL_Z: f64 = 10.0;
 
@@ -51,12 +51,17 @@ fn main() {
         Object::new(Plane)
             .with_transform(Mat::identity().translate(0, -0.5, 0))
             .with_material(Material {
-                pattern: Pattern::stripe_of(
-                    Pattern::checker(Color::white(), Color::new(0.8, 0.8, 0.0))
-                        .with_transform(Mat::identity().rotate_y(PI / 3.0)),
-                    Pattern::checker(Color::white(), Color::new(0.0, 0.8, 0.8))
-                        .with_transform(Mat::identity().rotate_y(PI / 3.0)),
+                pattern: Pattern::blend(
+                    Pattern::checker(Color::black(), Color::new(0.8, 0.8, 0.0))
+                        .with_transform(Mat::identity().translate(0, 0, -0.1).rotate_y(PI / 3.0)),
+                    Pattern::gradient(Color::black(), Color::new(0.0, 0.8, 0.8)).with_transform(
+                        Mat::identity()
+                            .translate(-0.5, 0, 0)
+                            .scale(10, 1, 1)
+                            .rotate_y(PI / 3.4),
+                    ),
                 ),
+
                 ambient: 0.2,
                 ..Default::default()
             }),
