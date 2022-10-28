@@ -11,6 +11,7 @@ pub struct Pattern {
 enum PatternImpl {
     Solid(Color),
     Stripe(Color, Color),
+    StripeOf(Box<Pattern>, Box<Pattern>),
     Gradient(Color, Color),
     Checker(Color, Color),
     Ring(Color, Color),
@@ -32,6 +33,10 @@ impl Pattern {
 
     pub fn stripe(a: Color, b: Color) -> Self {
         Self::new(Stripe(a, b))
+    }
+
+    pub fn stripe_of(a: Pattern, b: Pattern) -> Self {
+        Self::new(StripeOf(Box::new(a), Box::new(b)))
     }
 
     pub fn gradient(a: Color, b: Color) -> Self {
@@ -57,8 +62,8 @@ impl Pattern {
     }
 
     /// Calculate the color at the given point in object space.
-    pub fn color_at(&self, p: Point<spaces::Object>) -> Color {
-        let p = self.transform * p;
+    pub fn color_at(&self, obj_p: Point<spaces::Object>) -> Color {
+        let p = self.transform * obj_p;
         match self.pattern_impl {
             Solid(c) => c,
             Stripe(a, b) => {
@@ -66,6 +71,13 @@ impl Pattern {
                     a
                 } else {
                     b
+                }
+            }
+            StripeOf(ref a, ref b) => {
+                if p.x.rem_euclid(2.0) < 1.0 {
+                    a.color_at(obj_p)
+                } else {
+                    b.color_at(obj_p)
                 }
             }
             Gradient(a, b_minus_a) => a + (b_minus_a) * p.x.fract(),
