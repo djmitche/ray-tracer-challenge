@@ -1,7 +1,3 @@
-# BUGS
-
-Why is ch10 dithering?
-
 # IDEAS
 
 * Allow intersections to be reused in camera, avoiding allocations

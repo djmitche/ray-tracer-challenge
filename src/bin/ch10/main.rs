@@ -53,7 +53,7 @@ fn main() {
             .with_material(Material {
                 pattern: Pattern::blend(
                     Pattern::checker(Color::black(), Color::new(0.8, 0.8, 0.0))
-                        .with_transform(Mat::identity().translate(0, 0, -0.1).rotate_y(PI / 3.0)),
+                        .with_transform(Mat::identity().translate(0, -0.1, 0).rotate_y(PI / 3.0)),
                     Pattern::gradient(Color::black(), Color::new(0.0, 0.8, 0.8)).with_transform(
                         Mat::identity()
                             .translate(-0.5, 0, 0)
