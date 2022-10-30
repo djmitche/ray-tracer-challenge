@@ -1,5 +1,4 @@
 mod camera;
-mod canvas;
 mod colors;
 mod intersect;
 mod light;
@@ -12,7 +11,6 @@ pub mod spaces;
 mod world;
 
 pub use camera::*;
-pub use canvas::*;
 pub use colors::*;
 pub use intersect::*;
 pub use light::*;

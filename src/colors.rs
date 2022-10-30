@@ -1,6 +1,5 @@
-#![allow(dead_code)]
-#![allow(unused_imports)]
-use approx::{relative_eq, AbsDiffEq, RelativeEq};
+use approx::{AbsDiffEq, RelativeEq};
+use image::Rgb;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Color {
@@ -47,6 +46,21 @@ impl Default for Color {
             green: 0.0,
             blue: 0.0,
         }
+    }
+}
+
+impl From<Color> for Rgb<u8> {
+    fn from(c: Color) -> Self {
+        fn clamp(v: f64) -> u8 {
+            if v < 0.0 {
+                0
+            } else if v >= 1.0 {
+                255
+            } else {
+                (v * 256.0).floor() as u8
+            }
+        }
+        Rgb([clamp(c.red), clamp(c.green), clamp(c.blue)])
     }
 }
 

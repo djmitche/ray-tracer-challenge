@@ -1,12 +1,13 @@
+use image::RgbImage;
 use ray_tracer_challenge::*;
 
-const SIZE: usize = 1000;
+const SIZE: u32 = 1000;
 const CAMERA_Z: f64 = -5.0;
 const WALL_Z: f64 = 10.0;
 const WALL_SIZE: f64 = 7.0;
 
 fn main() {
-    let mut c = Canvas::new(SIZE, SIZE);
+    let mut img = RgbImage::new(SIZE, SIZE);
 
     let s =
         Object::new(Sphere).with_transform(Mat::identity().scale(1.2, 0.8, 1).translate(0.1, 0, 0));
@@ -22,13 +23,12 @@ fn main() {
             let mut inters = Intersections::default();
             s.intersect(ObjectIndex::test_value(1), &r, &mut inters);
             if let Some(inter) = inters.hit() {
-                c[(x, y)] = Color::new((inter.t - 4.0) * 2.0, 1.0, 0);
+                img.put_pixel(x, y, Color::new((inter.t - 4.0) * 2.0, 1.0, 0).into());
             } else {
-                c[(x, y)] = Color::new(0, 0, 1);
+                img.put_pixel(x, y, Color::new(0, 0, 1).into());
             }
         }
     }
 
-    c.write_ppm_file("/tmp/ch5.ppm")
-        .expect("could not write PPM file");
+    img.save("/tmp/ch5.png").expect("could not write PNG file");
 }

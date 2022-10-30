@@ -1,4 +1,5 @@
-use crate::{mat4, spaces, Canvas, Color, Mat, Point, Ray, Vector, World};
+use crate::{mat4, spaces, Color, Mat, Point, Ray, Vector, World};
+use image::RgbImage;
 use rayon::prelude::*;
 
 /// Camera represents a view onto the world space.
@@ -7,10 +8,10 @@ use rayon::prelude::*;
 /// in front of the eye.
 pub struct Camera {
     /// Horizontal pixel count
-    hsize: usize,
+    hsize: u32,
 
     /// Vertical pixel count
-    vsize: usize,
+    vsize: u32,
 
     /// matrix translating camera coordinates to world coordinates
     inv_transform: Mat<4, spaces::Camera, spaces::World>,
@@ -25,18 +26,18 @@ pub struct Camera {
     pixel_size: f64,
 
     /// number of times to oversample each pixel
-    oversample: usize,
+    oversample: u32,
 }
 
 impl Camera {
     pub fn new(
-        hsize: usize,
-        vsize: usize,
+        hsize: u32,
+        vsize: u32,
         fov: f64,
         from: Point<spaces::World>,
         to: Point<spaces::World>,
         up: Vector<spaces::World>,
-        oversample: usize,
+        oversample: u32,
     ) -> Self {
         let half_view = (fov / 2.0).tan();
         let aspect = hsize as f64 / vsize as f64;
@@ -81,7 +82,7 @@ impl Camera {
             ]
     }
 
-    fn ray_for_pixel(&self, x: usize, y: usize, xover: f64, yover: f64) -> Ray<spaces::World> {
+    fn ray_for_pixel(&self, x: u32, y: u32, xover: f64, yover: f64) -> Ray<spaces::World> {
         // offset from edge of image to the _center_ of the pixel
         let xoffset = (x as f64 + xover) * self.pixel_size;
         let yoffset = (y as f64 + yover) * self.pixel_size;
@@ -98,7 +99,7 @@ impl Camera {
     }
 
     /// Determine the color at the given x and y coordinates of the image.
-    pub fn color_at(&self, x: usize, y: usize, world: &World) -> Color {
+    pub fn color_at(&self, x: u32, y: u32, world: &World) -> Color {
         let mut acc = Color::black();
 
         let overfactor = 1.0 / (self.oversample + 1) as f64;
@@ -113,22 +114,16 @@ impl Camera {
     }
 
     /// Create a canvas containing the image
-    pub fn render(&self, world: &World) -> Canvas {
-        let mut canvas = Canvas::new(self.hsize, self.vsize);
-        for (x, y, c) in self
-            .into_iter()
-            .par_bridge()
-            .map(move |(x, y)| (x, y, self.color_at(x, y, world)))
-            .collect::<Vec<_>>()
-        {
-            canvas[(x, y)] = c;
-        }
-        canvas
+    pub fn render(&self, world: &World) -> RgbImage {
+        // TODO: use rayon again?
+        RgbImage::from_fn(self.hsize, self.vsize, |x, y| {
+            self.color_at(x, y, world).into()
+        })
     }
 }
 
 impl IntoIterator for &Camera {
-    type Item = (usize, usize);
+    type Item = (u32, u32);
     type IntoIter = PixelIterator;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -142,14 +137,14 @@ impl IntoIterator for &Camera {
 }
 
 pub struct PixelIterator {
-    hsize: usize,
-    vsize: usize,
-    nextx: usize,
-    nexty: usize,
+    hsize: u32,
+    vsize: u32,
+    nextx: u32,
+    nexty: u32,
 }
 
 impl Iterator for PixelIterator {
-    type Item = (usize, usize);
+    type Item = (u32, u32);
     fn next(&mut self) -> Option<Self::Item> {
         let rv = if self.nexty < self.vsize {
             (self.nextx, self.nexty)

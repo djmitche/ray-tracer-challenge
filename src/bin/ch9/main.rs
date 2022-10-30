@@ -1,7 +1,7 @@
 use core::f64::consts::PI;
 use ray_tracer_challenge::*;
 
-const SIZE: usize = 500;
+const SIZE: u32 = 500;
 const CAMERA_Z: f64 = -5.0;
 const WALL_Z: f64 = 10.0;
 
@@ -63,6 +63,6 @@ fn main() {
 
     camera
         .render(&world)
-        .write_ppm_file("/tmp/ch9.ppm")
-        .expect("could not write PPM file");
+        .save("/tmp/ch9.png")
+        .expect("could not write PNG file");
 }
