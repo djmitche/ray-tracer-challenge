@@ -115,10 +115,13 @@ impl Camera {
 
     /// Create a canvas containing the image
     pub fn render(&self, world: &World) -> RgbImage {
-        // TODO: use rayon again?
-        RgbImage::from_fn(self.hsize, self.vsize, |x, y| {
-            self.color_at(x, y, world).into()
-        })
+        let mut img = RgbImage::new(self.hsize, self.vsize);
+        img.enumerate_rows_mut().par_bridge().for_each(|(y, row)| {
+            for (x, _, p) in row {
+                *p = self.color_at(x, y, world).into();
+            }
+        });
+        img
     }
 }
 
