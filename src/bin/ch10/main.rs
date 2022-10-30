@@ -15,6 +15,7 @@ fn main() {
             .with_material(Material {
                 pattern: Pattern::stripe(Color::white(), Color::new(1, 0.5, 0.5)),
                 ambient: 0.2,
+                reflectivity: 0.2,
                 ..Default::default()
             }),
     );
@@ -29,6 +30,7 @@ fn main() {
                         .rotate_z(PI / 9.0),
                 ),
                 ambient: 0.2,
+                reflectivity: 0.2,
                 ..Default::default()
             }),
     );
@@ -43,6 +45,7 @@ fn main() {
                 pattern: Pattern::checker(Color::white(), Color::new(1, 0.5, 0.5))
                     .with_transform(Mat::identity().scale(0.1, 0.1, 0.1).rotate_z(PI / 4.0)),
                 ambient: 0.2,
+                reflectivity: 0.2,
                 ..Default::default()
             }),
     );
@@ -63,6 +66,7 @@ fn main() {
                 ),
 
                 ambient: 0.2,
+                reflectivity: 0.5,
                 ..Default::default()
             }),
     );

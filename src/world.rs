@@ -1,4 +1,6 @@
-use crate::{spaces, Color, Intersection, Intersections, Light, Object, Point, Ray, Vector};
+use crate::{
+    spaces, Color, Intersection, Intersections, Light, Material, Object, Point, Ray, Vector,
+};
 
 /// An index into the objects in a world.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -48,7 +50,7 @@ impl World {
     /// Create the "default_world" from the tests.
     #[cfg(test)]
     pub(crate) fn test_world() -> Self {
-        use crate::{Mat, Material, Sphere};
+        use crate::{Mat, Sphere};
         let mut w = World::default();
         w.add_object(Object::new(Sphere).with_material(Material {
             pattern: Color::new(0.8, 1.0, 0.6).into(),
@@ -81,6 +83,7 @@ impl World {
         Point<spaces::World>,
         Vector<spaces::World>,
         Vector<spaces::World>,
+        Vector<spaces::World>,
         Color,
     ) {
         let point = ray.position(hit.t);
@@ -90,7 +93,8 @@ impl World {
             // use the inside surface, with the opposite normal
             normalv = -normalv;
         }
-        (point, eyev, normalv, color)
+        let reflectv = ray.direction.reflect(normalv);
+        (point, eyev, normalv, reflectv, color)
     }
 
     fn point_is_shadowed(&self, point: Point<spaces::World>) -> bool {
@@ -109,24 +113,49 @@ impl World {
         }
     }
 
-    /// Determine the color received by an eye at the origin of the given ray.
-    pub fn color_at(&self, ray: &Ray<spaces::World>) -> Color {
+    fn reflected_color(
+        &self,
+        point: Point<spaces::World>,
+        reflectv: Vector<spaces::World>,
+        material: &Material,
+        mut total_reflectivity: f64,
+    ) -> Color {
+        total_reflectivity *= material.reflectivity;
+        if total_reflectivity < 0.00001 {
+            return Color::black();
+        }
+
+        // move 0.01 along the ray to escape the object on which point
+        // is situated
+        let refl_ray = Ray::new(point + reflectv * 0.01, reflectv);
+        self.color_at_inner(&refl_ray, total_reflectivity) * material.reflectivity
+    }
+
+    fn color_at_inner(&self, ray: &Ray<spaces::World>, total_reflectivity: f64) -> Color {
         let mut inters = Intersections::default();
         self.intersect(ray, &mut inters);
         if let Some(hit) = inters.hit() {
             let obj = &self.objects[hit.object_index.0];
-            let (point, eyev, normalv, color) = Self::precompute(obj, hit, ray);
-            self.light.lighting(
+            let (point, eyev, normalv, reflectv, color) = Self::precompute(obj, hit, ray);
+            let surface = self.light.lighting(
                 color,
                 &obj.material,
                 point,
                 eyev,
                 normalv,
                 self.point_is_shadowed(point),
-            )
+            );
+            let reflected =
+                self.reflected_color(point, reflectv, &obj.material, total_reflectivity);
+            surface + reflected
         } else {
             Color::black()
         }
+    }
+
+    /// Determine the color received by an eye at the origin of the given ray.
+    pub fn color_at(&self, ray: &Ray<spaces::World>) -> Color {
+        self.color_at_inner(ray, 1.0)
     }
 }
 
@@ -145,10 +174,11 @@ mod test {
             t: 4.0,
         };
 
-        let (point, eyev, normalv, _) = World::precompute(&shape, &i, &r);
+        let (point, eyev, normalv, reflectv, _) = World::precompute(&shape, &i, &r);
         assert_relative_eq!(point, Point::new(0, 0, -1));
         assert_relative_eq!(eyev, Vector::new(0, 0, -1));
         assert_relative_eq!(normalv, Vector::new(0, 0, -1));
+        assert_relative_eq!(reflectv, Vector::new(0, 0, -1));
     }
 
     #[test]
@@ -160,7 +190,7 @@ mod test {
             t: 1.0,
         };
 
-        let (point, eyev, normalv, _) = World::precompute(&shape, &i, &r);
+        let (point, eyev, normalv, _, _) = World::precompute(&shape, &i, &r);
         assert_relative_eq!(point, Point::new(0, 0, 1));
         assert_relative_eq!(eyev, Vector::new(0, 0, -1));
         assert_relative_eq!(normalv, Vector::new(0, 0, -1));
@@ -261,5 +291,68 @@ mod test {
         let w = World::test_world();
         let p = Point::new(-2, 2, -2);
         assert!(!w.point_is_shadowed(p));
+    }
+
+    #[test]
+    fn no_reflection() {
+        let mut w = World::default();
+        w.add_object(Object::new(Sphere).with_material(Material {
+            pattern: Color::new(0.8, 1.0, 0.6).into(),
+            diffuse: 0.7,
+            specular: 0.2,
+            ..Default::default()
+        }));
+        w.add_object(
+            Object::new(Sphere)
+                .with_transform(Mat::identity().scale(0.5, 0.5, 0.5))
+                .with_material(Material {
+                    ambient: 1.0,
+                    ..Default::default()
+                }),
+        );
+        assert_relative_eq!(
+            w.reflected_color(
+                Point::new(0, 0, 0),
+                Vector::new(1, 0, 0),
+                &Material {
+                    reflectivity: 0.0,
+                    ..Default::default()
+                },
+                1.0
+            ),
+            Color::black()
+        );
+    }
+
+    #[test]
+    fn reflective_material() {
+        let mut w = World::test_world();
+        w.add_object(
+            Object::new(Plane)
+                .with_transform(Mat::identity().translate(0, -1, 0))
+                .with_material(Material {
+                    reflectivity: 0.5,
+                    ..Default::default()
+                }),
+        );
+        let sqrt2over2 = 2f64.sqrt() / 2.0;
+        let r = Ray::new(
+            Point::new(0, 0, -3),
+            Vector::new(0, -sqrt2over2, sqrt2over2),
+        );
+        let mut inters = Intersections::default();
+        w.intersect(&r, &mut inters);
+        let hit = inters.hit().unwrap();
+        let obj = &w.objects[hit.object_index.0];
+        let (point, _, _, reflectv, _) = World::precompute(obj, hit, &r);
+        let color = w.reflected_color(point, reflectv, &obj.material, 1.0);
+        assert_relative_eq!(
+            color,
+            Color::new(
+                0.19033059654051723,
+                0.23791324567564653,
+                0.14274794740538793
+            )
+        );
     }
 }
