@@ -13,7 +13,7 @@ impl ObjectIndex {
 /// World describes an entire world to be rendered.
 #[derive(Debug)]
 pub struct World {
-    pub light: Light,
+    light: Light,
     objects: Vec<Object>,
 }
 
@@ -27,11 +27,22 @@ impl Default for World {
 }
 
 impl World {
+    pub fn new(light: Light) -> Self {
+        Self {
+            light,
+            objects: vec![],
+        }
+    }
+
     /// Add a new object to this world, returning its ObjectIndex.
     pub fn add_object(&mut self, obj: Object) -> ObjectIndex {
         let idx = ObjectIndex(self.objects.len());
         self.objects.push(obj);
         idx
+    }
+
+    pub fn set_light(&mut self, light: Light) {
+        self.light = light;
     }
 
     /// Create the "default_world" from the tests.

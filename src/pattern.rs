@@ -1,13 +1,13 @@
 use crate::{spaces, Color, Mat, Point};
 
 /// Pattern defines a pattern of colors in object space
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Pattern {
     transform: Mat<4, spaces::Object, spaces::Pattern>,
     pattern_impl: PatternImpl,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum PatternImpl {
     Solid(Color),
     Stripe(Color, Color),

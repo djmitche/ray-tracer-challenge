@@ -26,7 +26,7 @@ pub struct Object {
     transp_transform: Mat<4, spaces::Object, spaces::World>,
 
     /// The material comprising this object.
-    pub material: Material,
+    pub(crate) material: Material,
 }
 
 impl Object {
@@ -57,7 +57,7 @@ impl Object {
     }
 
     /// Calculate the intersections of the given ray with this object.
-    pub fn intersect(
+    pub(crate) fn intersect(
         &self,
         object_index: ObjectIndex,
         ray: &Ray<spaces::World>,
@@ -70,7 +70,10 @@ impl Object {
     /// Calculate the normal of the given point on the surface of this object and the object's
     /// color at that point.  These require some shared intermediate values and are best calculated
     /// at the same time.
-    pub fn normal_and_color(&self, point: Point<spaces::World>) -> (Vector<spaces::World>, Color) {
+    pub(crate) fn normal_and_color(
+        &self,
+        point: Point<spaces::World>,
+    ) -> (Vector<spaces::World>, Color) {
         let obj_point = self.transform * point;
 
         let obj_normal = self.inner.normal(obj_point);

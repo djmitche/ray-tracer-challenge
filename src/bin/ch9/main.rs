@@ -7,7 +7,7 @@ const WALL_Z: f64 = 10.0;
 
 fn main() {
     let mut world = World::default();
-    world.light = Light::new_point(Point::new(-10, 10, -10), Color::white());
+    world.set_light(Light::new_point(Point::new(-10, 10, -10), Color::white()));
 
     world.add_object(
         Object::new(Sphere)

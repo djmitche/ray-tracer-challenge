@@ -1,12 +1,14 @@
 use core::f64::consts::PI;
 use ray_tracer_challenge::*;
-use rayon::prelude::*;
 
 const SIZE: u32 = 2000;
 
 fn main() {
     let mut world = World::default();
-    world.light = Light::new_point(Point::new(-10, 10, -10), Color::new(1, 1, 1));
+    world.set_light(Light::new_point(
+        Point::new(-10, 10, -10),
+        Color::new(1, 1, 1),
+    ));
 
     // floor
     world.add_object(

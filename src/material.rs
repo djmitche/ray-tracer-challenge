@@ -1,7 +1,7 @@
 use crate::{Color, Pattern};
 
 /// Material defines the relevant characteristics of a material.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Material {
     pub pattern: Pattern,
     pub ambient: f64,
