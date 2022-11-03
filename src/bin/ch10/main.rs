@@ -1,7 +1,6 @@
 use core::f64::consts::PI;
 use ray_tracer_challenge::*;
 
-const SIZE: u32 = 1000;
 const CAMERA_Z: f64 = -5.0;
 const WALL_Z: f64 = 10.0;
 
@@ -71,18 +70,12 @@ fn main() {
             }),
     );
 
-    let camera = Camera::new(
-        SIZE,
-        SIZE,
+    display(
+        world,
         PI / 3.0,
         Point::new(1.5, 2, CAMERA_Z),
         Point::new(-2, -1, WALL_Z),
         Vector::new(0, 1, 0),
-        3,
+        1,
     );
-
-    camera
-        .render(&world)
-        .save("/tmp/ch10.png")
-        .expect("could not write PNG file");
 }

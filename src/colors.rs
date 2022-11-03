@@ -64,6 +64,21 @@ impl From<Color> for Rgb<u8> {
     }
 }
 
+impl From<Color> for u32 {
+    fn from(c: Color) -> Self {
+        fn clamp(v: f64) -> u32 {
+            if v < 0.0 {
+                0
+            } else if v >= 1.0 {
+                255
+            } else {
+                (v * 256.0).floor() as u32
+            }
+        }
+        clamp(c.red) << 16 | clamp(c.green) << 8 | clamp(c.blue)
+    }
+}
+
 impl AbsDiffEq for Color {
     type Epsilon = <f64 as AbsDiffEq>::Epsilon;
 

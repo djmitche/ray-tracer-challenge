@@ -1,5 +1,6 @@
 mod camera;
 mod colors;
+mod display;
 mod intersect;
 mod light;
 mod material;
@@ -12,6 +13,7 @@ mod world;
 
 pub use camera::*;
 pub use colors::*;
+pub use display::*;
 pub use intersect::*;
 pub use light::*;
 pub use material::*;

@@ -113,7 +113,7 @@ impl Camera {
         acc / (self.oversample * self.oversample) as f64
     }
 
-    /// Create a canvas containing the image
+    /// Create an image
     pub fn render(&self, world: &World) -> RgbImage {
         let mut img = RgbImage::new(self.hsize, self.vsize);
         img.enumerate_rows_mut().par_bridge().for_each(|(y, row)| {
@@ -122,6 +122,23 @@ impl Camera {
             }
         });
         img
+    }
+
+    /// Render the image as a buffer of u32's
+    pub fn u32_buffer(&self, world: &World, buf: &mut [u32]) {
+        let hsize = self.hsize as usize;
+        let vsize = self.vsize as usize;
+        debug_assert_eq!(buf.len(), hsize * vsize);
+
+        // parallelize over rows
+        buf.chunks_mut(hsize)
+            .enumerate()
+            .par_bridge()
+            .for_each(|(y, row)| {
+                for x in 0..hsize {
+                    row[x] = self.color_at(x as u32, y as u32, world).into();
+                }
+            });
     }
 }
 

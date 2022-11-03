@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 approx = "0.5.1"
 image = { version = "0.24.4", default-features = false, features = ["png"] }
+instant = "0.1.12"
 pretty_assertions = "1.3.0"
 rayon = "1.5.3"
+softbuffer = "0.1.1"
 textwrap = "0.15.1"
+winit = "0.27.5"
