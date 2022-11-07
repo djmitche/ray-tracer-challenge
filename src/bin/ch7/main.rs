@@ -12,20 +12,20 @@ fn main() {
     world.add_object(
         Object::new(Sphere)
             .with_transform(Mat::identity().scale(0.75, 0.8, 1))
-            .with_material(Material {
-                pattern: Color::new(1, 0.2, 1).into(),
-                ambient: 0.2,
-                ..Default::default()
-            }),
+            .with_material(
+                Material::default()
+                    .with_color(Color::new(1, 0.2, 1))
+                    .with_ambient(0.2),
+            ),
     );
     world.add_object(
         Object::new(Sphere)
             .with_transform(Mat::identity().scale(0.5, 0.5, 0.5).translate(-0.75, 0, -1))
-            .with_material(Material {
-                pattern: Color::new(0.3, 0.8, 0.1).into(),
-                ambient: 0.2,
-                ..Default::default()
-            }),
+            .with_material(
+                Material::default()
+                    .with_color(Color::new(0.3, 0.8, 0.1))
+                    .with_ambient(0.2),
+            ),
     );
     world.add_object(
         Object::new(Sphere)
@@ -34,11 +34,11 @@ fn main() {
                     .scale(0.5, 0.5, 0.5)
                     .translate(0.75, 0, -0.9),
             )
-            .with_material(Material {
-                pattern: Color::new(0.8, 0.8, 0.1).into(),
-                ambient: 0.2,
-                ..Default::default()
-            }),
+            .with_material(
+                Material::default()
+                    .with_color(Color::new(0.8, 0.8, 0.1))
+                    .with_ambient(0.2),
+            ),
     );
 
     let camera = Camera::new(

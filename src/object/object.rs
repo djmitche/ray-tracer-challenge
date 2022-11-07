@@ -122,10 +122,7 @@ mod test {
 
     #[test]
     fn with_material() {
-        let mat = Material {
-            ambient: 13.0,
-            ..Default::default()
-        };
+        let mat = Material::default().with_ambient(13.0);
         let o = Object::new(Sphere).with_material(mat);
         assert_relative_eq!(o.transform, Mat::identity());
         assert_relative_eq!(o.transp_transform, Mat::identity());
@@ -136,10 +133,7 @@ mod test {
     fn with_both() {
         let t = Mat::identity().rotate_x(1.0).rotate_y(2.0);
         let o = Object::new(Sphere)
-            .with_material(Material {
-                ambient: 13.0,
-                ..Default::default()
-            })
+            .with_material(Material::default().with_ambient(13.0))
             .with_transform(t);
         assert_relative_eq!(o.transform, t.inverse());
         assert_relative_eq!(o.transp_transform, t.inverse().transpose());
@@ -150,10 +144,7 @@ mod test {
     fn intersect() {
         let o = Object::new(Sphere)
             .with_transform(Mat::identity().translate(0, 0, 10))
-            .with_material(Material {
-                ambient: 13.0,
-                ..Default::default()
-            });
+            .with_material(Material::default().with_ambient(13.0));
         let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 2));
         let mut inters = Intersections::default();
         o.intersect(ObjectIndex::test_value(0), &r, &mut inters);

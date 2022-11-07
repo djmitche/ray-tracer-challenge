@@ -14,10 +14,7 @@ fn main() {
     world.add_object(
         Object::new(Sphere)
             .with_transform(Mat::identity().scale(10, 0.01, 10))
-            .with_material(Material {
-                specular: 0.0,
-                ..Default::default()
-            }),
+            .with_material(Material::default().with_specular(0.0)),
     );
 
     // left_wall
@@ -30,10 +27,7 @@ fn main() {
                     .rotate_y(-PI / 4.0)
                     .translate(0, 0, 5),
             )
-            .with_material(Material {
-                specular: 0.0,
-                ..Default::default()
-            }),
+            .with_material(Material::default().with_specular(0.0)),
     );
 
     // right_wall
@@ -46,22 +40,19 @@ fn main() {
                     .rotate_y(PI / 4.0)
                     .translate(0, 0, 5),
             )
-            .with_material(Material {
-                specular: 0.0,
-                ..Default::default()
-            }),
+            .with_material(Material::default().with_specular(0.0)),
     );
 
     // middle
     world.add_object(
         Object::new(Sphere)
             .with_transform(Mat::identity().translate(-0.5, 1, 0.5))
-            .with_material(Material {
-                pattern: Color::new(0.1, 1, 0.5).into(),
-                diffuse: 0.7,
-                specular: 0.3,
-                ..Default::default()
-            }),
+            .with_material(
+                Material::default()
+                    .with_color(Color::new(0.1, 1, 0.5))
+                    .with_diffuse(0.7)
+                    .with_specular(0.3),
+            ),
     );
 
     // right
@@ -72,12 +63,12 @@ fn main() {
                     .scale(0.5, 0.5, 0.5)
                     .translate(1.5, 0.5, -0.5),
             )
-            .with_material(Material {
-                pattern: Color::new(0.5, 1, 0.1).into(),
-                diffuse: 0.7,
-                specular: 0.3,
-                ..Default::default()
-            }),
+            .with_material(
+                Material::default()
+                    .with_color(Color::new(0.5, 1, 0.1))
+                    .with_diffuse(0.7)
+                    .with_specular(0.3),
+            ),
     );
 
     // left
@@ -88,12 +79,12 @@ fn main() {
                     .scale(0.33, 0.33, 0.33)
                     .translate(-1.5, 0.33, -0.75),
             )
-            .with_material(Material {
-                pattern: Color::new(1, 0.8, 0.1).into(),
-                diffuse: 0.7,
-                specular: 0.3,
-                ..Default::default()
-            }),
+            .with_material(
+                Material::default()
+                    .with_color(Color::new(1, 0.8, 0.1))
+                    .with_diffuse(0.7)
+                    .with_specular(0.3),
+            ),
     );
 
     let camera = Camera::new(

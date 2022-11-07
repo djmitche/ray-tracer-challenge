@@ -145,20 +145,20 @@ mod test {
     fn stripes_with_obj_transform() {
         let o = Object::new(Sphere)
             .with_transform(Mat::identity().scale(2, 2, 2))
-            .with_material(Material {
-                pattern: Pattern::stripe(Color::white(), Color::black()),
-                ..Default::default()
-            });
+            .with_material(
+                Material::default().with_pattern(Pattern::stripe(Color::white(), Color::black())),
+            );
         assert_relative_eq!(o.color_at(Point::new(1.5, 0, 0)), Color::white());
     }
 
     #[test]
     fn stripes_with_pat_transform() {
-        let o = Object::new(Sphere).with_material(Material {
-            pattern: Pattern::stripe(Color::white(), Color::black())
-                .with_transform(Mat::identity().scale(2, 2, 2)),
-            ..Default::default()
-        });
+        let o = Object::new(Sphere).with_material(
+            Material::default().with_pattern(
+                Pattern::stripe(Color::white(), Color::black())
+                    .with_transform(Mat::identity().scale(2, 2, 2)),
+            ),
+        );
         assert_relative_eq!(o.color_at(Point::new(1.5, 0, 0)), Color::white());
     }
 
@@ -166,11 +166,12 @@ mod test {
     fn stripes_with_both_transform() {
         let o = Object::new(Sphere)
             .with_transform(Mat::identity().scale(2, 2, 2))
-            .with_material(Material {
-                pattern: Pattern::stripe(Color::white(), Color::black())
-                    .with_transform(Mat::identity().translate(0.5, 0, 0)),
-                ..Default::default()
-            });
+            .with_material(
+                Material::default().with_pattern(
+                    Pattern::stripe(Color::white(), Color::black())
+                        .with_transform(Mat::identity().translate(0.5, 0, 0)),
+                ),
+            );
         assert_relative_eq!(o.color_at(Point::new(1.5, 0, 0)), Color::white());
     }
 

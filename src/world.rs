@@ -52,12 +52,14 @@ impl World {
     pub(crate) fn test_world() -> Self {
         use crate::{Mat, Sphere};
         let mut w = World::default();
-        w.add_object(Object::new(Sphere).with_material(Material {
-            pattern: Color::new(0.8, 1.0, 0.6).into(),
-            diffuse: 0.7,
-            specular: 0.2,
-            ..Default::default()
-        }));
+        w.add_object(
+            Object::new(Sphere).with_material(
+                Material::default()
+                    .with_color(Color::new(0.8, 1.0, 0.6))
+                    .with_diffuse(0.7)
+                    .with_specular(0.2),
+            ),
+        );
         w.add_object(
             Object::new(Sphere)
                 .with_transform(Mat::identity().scale(0.5, 0.5, 0.5))
@@ -246,20 +248,19 @@ mod test {
     #[test]
     fn color_at_behind_ray() {
         let mut w = World::default();
-        w.add_object(Object::new(Sphere).with_material(Material {
-            pattern: Color::new(0.8, 1.0, 0.6).into(),
-            diffuse: 0.7,
-            specular: 0.2,
-            ambient: 1.0,
-            ..Default::default()
-        }));
+        w.add_object(
+            Object::new(Sphere).with_material(
+                Material::default()
+                    .with_color(Color::new(0.8, 1.0, 0.6))
+                    .with_diffuse(0.7)
+                    .with_specular(0.2)
+                    .with_ambient(1.0),
+            ),
+        );
         w.add_object(
             Object::new(Sphere)
                 .with_transform(Mat::identity().scale(0.5, 0.5, 0.5))
-                .with_material(Material {
-                    ambient: 1.0,
-                    ..Default::default()
-                }),
+                .with_material(Material::default().with_ambient(1.0)),
         );
         let r = Ray::new(Point::new(0, 0, 0.75), Vector::new(0, 0, -1));
         assert_relative_eq!(w.color_at(&r), Color::white());
@@ -296,28 +297,24 @@ mod test {
     #[test]
     fn no_reflection() {
         let mut w = World::default();
-        w.add_object(Object::new(Sphere).with_material(Material {
-            pattern: Color::new(0.8, 1.0, 0.6).into(),
-            diffuse: 0.7,
-            specular: 0.2,
-            ..Default::default()
-        }));
+        w.add_object(
+            Object::new(Sphere).with_material(
+                Material::default()
+                    .with_color(Color::new(0.8, 1.0, 0.6))
+                    .with_diffuse(0.7)
+                    .with_specular(0.2),
+            ),
+        );
         w.add_object(
             Object::new(Sphere)
                 .with_transform(Mat::identity().scale(0.5, 0.5, 0.5))
-                .with_material(Material {
-                    ambient: 1.0,
-                    ..Default::default()
-                }),
+                .with_material(Material::default().with_ambient(1.0)),
         );
         assert_relative_eq!(
             w.reflected_color(
                 Point::new(0, 0, 0),
                 Vector::new(1, 0, 0),
-                &Material {
-                    reflectivity: 0.0,
-                    ..Default::default()
-                },
+                &Material::default().with_reflectivity(0.0),
                 1.0
             ),
             Color::black()
@@ -330,10 +327,7 @@ mod test {
         w.add_object(
             Object::new(Plane)
                 .with_transform(Mat::identity().translate(0, -1, 0))
-                .with_material(Material {
-                    reflectivity: 0.5,
-                    ..Default::default()
-                }),
+                .with_material(Material::default().with_reflectivity(0.5)),
         );
         let sqrt2over2 = 2f64.sqrt() / 2.0;
         let r = Ray::new(
