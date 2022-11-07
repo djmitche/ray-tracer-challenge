@@ -1,4 +1,4 @@
-use crate::{spaces, Color, Intersections, Object, Point, Ray};
+use crate::{spaces, Color, Intersections, Object, Point, Ray, Vector};
 
 /// The minimum total_contribution for which color_at_inner will make a calculation
 const MIN_CONTRIBUTION: f64 = 0.001;
@@ -27,6 +27,19 @@ impl Light {
             intensity,
         }
     }
+}
+
+/// A representation of light's effect at a particular point
+#[derive(Debug, Copy, Clone, PartialEq, Default)]
+pub(crate) struct LightAt {
+    /// The intensity of the light
+    pub(crate) intensity: Color,
+
+    /// Direction from the given point to the light
+    pub(crate) direction: Vector<spaces::World>,
+
+    /// Whether the point is in shadow
+    pub(crate) in_shadow: bool,
 }
 
 /// World describes an entire world to be rendered.
@@ -92,7 +105,7 @@ impl World {
         }
     }
 
-    pub(crate) fn point_is_shadowed(&self, point: Point<spaces::World>) -> bool {
+    fn point_is_shadowed(&self, point: Point<spaces::World>) -> bool {
         let to_light = self.light.position - point;
         let to_light_norm = to_light.normalize();
         // move 0.01 along the ray to escape the object on which point
@@ -108,14 +121,21 @@ impl World {
         }
     }
 
+    /// Calculate the effect of the world's light at the given point.
+    pub(crate) fn light_at(&self, point: Point<spaces::World>) -> LightAt {
+        LightAt {
+            intensity: self.light.intensity,
+            direction: (self.light.position - point).normalize(),
+            in_shadow: self.point_is_shadowed(point),
+        }
+    }
+
     /// Determine the color received by an eye at the origin of the given ray, with
-    /// a measure of total contribution to the final pixel.  This function may recurse,
-    /// and will terminate when the total contribution is small enough to not matter.
-    pub(crate) fn color_at_inner(
-        &self,
-        ray: &Ray<spaces::World>,
-        total_contribution: f64,
-    ) -> Color {
+    /// a measure of total contribution to the final pixel.
+
+    /// This function may recurse, and will terminate when the total contribution is small enough
+    /// to not matter.  The initial `total_contribution` should be zero.
+    pub(crate) fn color_at(&self, ray: &Ray<spaces::World>, total_contribution: f64) -> Color {
         // stop recursing when the effect is small enough
         if total_contribution < MIN_CONTRIBUTION {
             return Color::black();
@@ -130,11 +150,6 @@ impl World {
             Color::black()
         }
     }
-
-    /// Determine the color received by an eye at the origin of the given ray.
-    pub fn color_at(&self, ray: &Ray<spaces::World>) -> Color {
-        self.color_at_inner(ray, 1.0)
-    }
 }
 
 #[cfg(test)]
@@ -148,7 +163,7 @@ mod test {
         let mut w = World::test_world();
         w.light = Light::new_point(Point::new(0, 0.25, 0), Color::white());
         let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
-        let c = w.color_at(&r);
+        let c = w.color_at(&r, 1.0);
         assert_relative_eq!(
             c,
             Color::new(0.9049844720832575, 0.9049844720832575, 0.9049844720832575)
@@ -173,7 +188,7 @@ mod test {
     fn color_at_miss() {
         let w = World::test_world();
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 1, 0));
-        assert_relative_eq!(w.color_at(&r), Color::black());
+        assert_relative_eq!(w.color_at(&r, 1.0), Color::black());
     }
 
     #[test]
@@ -181,7 +196,7 @@ mod test {
         let w = World::test_world();
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
         assert_relative_eq!(
-            w.color_at(&r),
+            w.color_at(&r, 1.0),
             Color::new(
                 0.38066119308103435,
                 0.47582649135129296,
@@ -208,7 +223,7 @@ mod test {
                 .with_material(Material::default().with_ambient(1.0)),
         );
         let r = Ray::new(Point::new(0, 0, 0.75), Vector::new(0, 0, -1));
-        assert_relative_eq!(w.color_at(&r), Color::white());
+        assert_relative_eq!(w.color_at(&r, 1.0), Color::white());
     }
 
     #[test]

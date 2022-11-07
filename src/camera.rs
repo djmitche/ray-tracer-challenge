@@ -106,7 +106,7 @@ impl Camera {
         for xo in 1..=self.oversample {
             for yo in 1..=self.oversample {
                 let ray = self.ray_for_pixel(x, y, overfactor * xo as f64, overfactor * yo as f64);
-                acc = acc + world.color_at(&ray);
+                acc = acc + world.color_at(&ray, 1.0);
             }
         }
 
