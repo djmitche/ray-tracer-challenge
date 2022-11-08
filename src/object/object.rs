@@ -127,7 +127,6 @@ mod test {
         let o = Object::new(Sphere);
         assert_relative_eq!(o.transform, Mat::identity());
         assert_relative_eq!(o.transp_transform, Mat::identity());
-        assert_relative_eq!(o.material.ambient, Material::default().ambient);
     }
 
     #[test]
@@ -136,27 +135,21 @@ mod test {
         let o = Object::new(Sphere).with_transform(t);
         assert_relative_eq!(o.transform, t.inverse());
         assert_relative_eq!(o.transp_transform, t.inverse().transpose());
-        assert_relative_eq!(o.material.ambient, Material::default().ambient);
     }
 
     #[test]
     fn with_material() {
-        let mat = Material::default().with_ambient(13.0);
-        let o = Object::new(Sphere).with_material(mat);
+        let o = Object::new(Sphere).with_material(Material::default());
         assert_relative_eq!(o.transform, Mat::identity());
         assert_relative_eq!(o.transp_transform, Mat::identity());
-        assert_relative_eq!(o.material.ambient, 13.0);
     }
 
     #[test]
     fn with_both() {
         let t = Mat::identity().rotate_x(1.0).rotate_y(2.0);
-        let o = Object::new(Sphere)
-            .with_material(Material::default().with_ambient(13.0))
-            .with_transform(t);
+        let o = Object::new(Sphere).with_transform(t);
         assert_relative_eq!(o.transform, t.inverse());
         assert_relative_eq!(o.transp_transform, t.inverse().transpose());
-        assert_relative_eq!(o.material.ambient, 13.0);
     }
 
     #[test]

@@ -3,12 +3,12 @@ use crate::{spaces, Color, Pattern, Point, Ray, Vector, World};
 /// Material defines the relevant characteristics of a material.
 #[derive(Debug, Clone)]
 pub struct Material {
-    pub pattern: Pattern,
-    pub ambient: f64,
-    pub diffuse: f64,
-    pub specular: f64,
-    pub shininess: f64,
-    pub reflectivity: f64,
+    pattern: Pattern,
+    ambient: f64,
+    diffuse: f64,
+    specular: f64,
+    shininess: f64,
+    reflectivity: f64,
 }
 
 impl Default for Material {
