@@ -70,54 +70,7 @@ impl Object {
         self.inner.intersect(object_index, obj_ray, inters);
     }
 
-    /// Calculate the surface lighting for the given args.
-    fn surface_color(
-        &self,
-        world: &World,
-        material_color: Color,
-        point: Point<spaces::World>,
-        eyev: Vector<spaces::World>,
-        normalv: Vector<spaces::World>,
-    ) -> Color {
-        let light_at = world.light_at(point);
-        // combine material color and light color
-        let eff_color = material_color * light_at.intensity;
-
-        // compute the ambient contribution
-        let ambient = eff_color * self.material.ambient;
-
-        if light_at.in_shadow {
-            return ambient;
-        }
-
-        // calculate diffuse and specular
-        let diffuse;
-        let specular;
-
-        // light_dot_normal is the cosine of the angle between the light vector and the normal
-        // vector.  A negative number means it is on the other side of the surface.
-        let light_dot_normal = light_at.direction.dot(normalv);
-        if light_dot_normal < 0.0 {
-            diffuse = Color::black();
-            specular = Color::black();
-        } else {
-            // compute the diffuse contribution
-            diffuse = eff_color * self.material.diffuse * light_dot_normal;
-
-            // reflect_dot_eye is the cosine of the angle between the reflection vector and the eye
-            // vector.
-            let reflect_dot_eye = (-light_at.direction).reflect(normalv).dot(eyev);
-            if reflect_dot_eye < 0.0 {
-                specular = Color::black();
-            } else {
-                let factor = reflect_dot_eye.powf(self.material.shininess);
-                specular = light_at.intensity * self.material.specular * factor;
-            }
-        }
-
-        ambient + diffuse + specular
-    }
-
+    // TODO: move to material
     fn reflected_color(
         &self,
         world: &World,
@@ -158,10 +111,10 @@ impl Object {
             normalv = -normalv;
         }
 
-        let material_color = self.material.pattern.color_at(obj_point);
-
         // calculate surface color
-        let mut color = self.surface_color(world, material_color, point, eyev, normalv);
+        let mut color = self
+            .material
+            .surface_color(world, point, obj_point, eyev, normalv);
 
         // add reflected color
         if self.material.reflectivity > 0.0 {
@@ -186,7 +139,6 @@ impl Object {
 mod test {
     use crate::*;
     use approx::*;
-    use std::f64::consts::PI;
 
     #[test]
     fn defaults() {
@@ -256,90 +208,6 @@ mod test {
         assert_relative_eq!(n.magnitude(), 1.0);
         assert_eq!(hit.object_index, ObjectIndex::test_value(0));
     }
-
-    #[test]
-    fn eye_between_light_and_surface() {
-        let position = Point::new(0, 0, 0);
-        let eyev = Vector::new(0, 0, -1);
-        let normalv = Vector::new(0, 0, -1);
-        let o = Object::new(Sphere);
-        let w = World::new(Light::new_point(Point::new(0, 0, -10), Color::white()));
-        assert_relative_eq!(
-            o.surface_color(&w, Color::white(), position, eyev, normalv),
-            Color::new(1.9, 1.9, 1.9)
-        );
-    }
-
-    #[test]
-    fn eye_45_to_normal() {
-        let position = Point::new(0, 0, 0);
-        let eyev = Vector::new(0, 2f64.sqrt() / 2.0, -2f64.sqrt() / 2.0);
-        let normalv = Vector::new(0, 0, -1);
-        let o = Object::new(Sphere);
-        let w = World::new(Light::new_point(Point::new(0, 0, -10), Color::white()));
-        assert_relative_eq!(
-            o.surface_color(&w, Color::white(), position, eyev, normalv),
-            Color::new(1.0, 1.0, 1.0)
-        );
-    }
-
-    #[test]
-    fn light_45_to_normal() {
-        let position = Point::new(0, 0, 0);
-        let eyev = Vector::new(0, 0, -1);
-        let normalv = Vector::new(0, 0, -1);
-        let o = Object::new(Sphere);
-        let w = World::new(Light::new_point(Point::new(0, 10, -10), Color::white()));
-        assert_relative_eq!(
-            o.surface_color(&w, Color::white(), position, eyev, normalv),
-            Color::new(0.7363961030678927, 0.7363961030678927, 0.7363961030678927)
-        );
-    }
-
-    #[test]
-    fn light_eye_in_path_of_reflection() {
-        let position = Point::new(0, 0, 0);
-        let eyev = Vector::new(0, -2f64.sqrt() / 2.0, -2f64.sqrt() / 2.0);
-        let normalv = Vector::new(0, 0, -1);
-        let o = Object::new(Sphere);
-        let w = World::new(Light::new_point(Point::new(0, 10, -10), Color::white()));
-        assert_relative_eq!(
-            o.surface_color(&w, Color::white(), position, eyev, normalv),
-            Color::new(1.6363961030678928, 1.6363961030678928, 1.6363961030678928)
-        );
-    }
-
-    #[test]
-    fn light_behind_surface() {
-        let position = Point::new(0, 0, 0);
-        let eyev = Vector::new(0, 0, -1);
-        let normalv = Vector::new(0, 0, -1);
-        let o = Object::new(Sphere);
-        let w = World::new(Light::new_point(Point::new(0, 0, 10), Color::white()));
-        assert_relative_eq!(
-            o.surface_color(&w, Color::white(), position, eyev, normalv),
-            Color::new(0.1, 0.1, 0.1)
-        );
-    }
-
-    #[test]
-    fn surface_in_shadow() {
-        let position = Point::new(0, 0, 0);
-        let eyev = Vector::new(0, 0, -1);
-        let normalv = Vector::new(0, 0, -1);
-        let o = Object::new(Sphere);
-        let mut w = World::new(Light::new_point(Point::new(0, 0, -10), Color::white()));
-        // add a plane between light and position, to shadow it
-        w.add_object(
-            Object::new(Plane)
-                .with_transform(Mat::identity().rotate_x(PI / 2.0).translate(0, 0, -5)),
-        );
-        assert_relative_eq!(
-            o.surface_color(&w, Color::white(), position, eyev, normalv),
-            Color::new(0.1, 0.1, 0.1),
-        );
-    }
-
     #[test]
     fn no_reflection() {
         let mut w = World::default();
@@ -364,6 +232,7 @@ mod test {
     }
 
     /*
+     * TODO
     #[test]
     fn reflective_material() {
         let mut w = World::test_world();
