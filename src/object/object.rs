@@ -70,21 +70,6 @@ impl Object {
         self.inner.intersect(object_index, obj_ray, inters);
     }
 
-    // TODO: move to material
-    fn reflected_color(
-        &self,
-        world: &World,
-        point: Point<spaces::World>,
-        reflectv: Vector<spaces::World>,
-        total_contribution: f64,
-    ) -> Color {
-        // move 0.01 along the ray to escape the object on which point
-        // is situated
-        let refl_ray = Ray::new(point + reflectv * 0.01, reflectv);
-        world.color_at(&refl_ray, total_contribution * self.material.reflectivity)
-            * self.material.reflectivity
-    }
-
     pub(crate) fn color_at(
         &self,
         world: &World,
@@ -111,18 +96,15 @@ impl Object {
             normalv = -normalv;
         }
 
-        // calculate surface color
-        let mut color = self
-            .material
-            .surface_color(world, point, obj_point, eyev, normalv);
-
-        // add reflected color
-        if self.material.reflectivity > 0.0 {
-            let reflectv = ray.direction.reflect(normalv);
-            color = color + self.reflected_color(world, point, reflectv, total_contribution);
-        };
-
-        color
+        self.material.color_at(
+            world,
+            ray,
+            point,
+            obj_point,
+            eyev,
+            normalv,
+            total_contribution,
+        )
     }
 
     /// Get only the normal (used for testing objects)
@@ -208,61 +190,4 @@ mod test {
         assert_relative_eq!(n.magnitude(), 1.0);
         assert_eq!(hit.object_index, ObjectIndex::test_value(0));
     }
-    #[test]
-    fn no_reflection() {
-        let mut w = World::default();
-        w.add_object(
-            Object::new(Sphere).with_material(
-                Material::default()
-                    .with_color(Color::new(0.8, 1.0, 0.6))
-                    .with_diffuse(0.7)
-                    .with_specular(0.2),
-            ),
-        );
-        w.add_object(
-            Object::new(Sphere)
-                .with_transform(Mat::identity().scale(0.5, 0.5, 0.5))
-                .with_material(Material::default().with_ambient(1.0)),
-        );
-        let o = Object::new(Sphere).with_material(Material::default().with_reflectivity(0.0));
-        assert_relative_eq!(
-            o.reflected_color(&w, Point::new(0, 0, 0), Vector::new(1, 0, 0), 1.0),
-            Color::black()
-        );
-    }
-
-    /*
-     * TODO
-    #[test]
-    fn reflective_material() {
-        let mut w = World::test_world();
-        w.add_object(
-            Object::new(Plane)
-                .with_transform(Mat::identity().translate(0, -1, 0))
-                .with_material(Material::default().with_reflectivity(0.5)),
-        );
-        let sqrt2over2 = 2f64.sqrt() / 2.0;
-        let r = Ray::new(
-            Point::new(0, 0, -3),
-            Vector::new(0, -sqrt2over2, sqrt2over2),
-        );
-        let mut inters = Intersections::default();
-        w.intersect(&r, &mut inters);
-        let hit = inters.hit().unwrap();
-        let obj = &w.objects[hit.object_index.0];
-        let point: Point<spaces::World> = Point::new(0, -1, -2);
-        let reflectv: Vector<spaces::World> =
-            Vector::new(0, 0.7071067811865476, 0.7071067811865476);
-
-        let color = w.reflected_color(point, reflectv, &obj.material, 1.0);
-        assert_relative_eq!(
-            color,
-            Color::new(
-                0.19033059654051723,
-                0.23791324567564653,
-                0.14274794740538793
-            )
-        );
-    }
-    */
 }
