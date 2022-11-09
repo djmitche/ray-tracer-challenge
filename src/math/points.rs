@@ -1,12 +1,13 @@
 use super::{Space, Vector};
 use approx::{AbsDiffEq, RelativeEq};
+use std::fmt;
 use std::marker::PhantomData;
 
 /// Point represents a location in the given space.
 ///
 /// This can be represented as a 3-tuple with labels x, y, z.  In 4-dimensional transformation, it
 /// acts as though it has a fourth element with value 1.0.
-#[derive(Debug, Copy, Clone, PartialEq, Default)]
+#[derive(Copy, Clone, PartialEq, Default)]
 pub struct Point<S: Space> {
     pub x: f64,
     pub y: f64,
@@ -38,6 +39,16 @@ impl<S: Space> Point<S> {
             z: self.z,
             space: PhantomData,
         }
+    }
+}
+
+impl<S: Space> fmt::Debug for Point<S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Point")
+            .field("x", &self.x)
+            .field("y", &self.y)
+            .field("z", &self.z)
+            .finish()
     }
 }
 

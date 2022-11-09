@@ -16,7 +16,7 @@ pub fn display(
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Ray Tracer Challenge")
-        .with_fullscreen(Some(Fullscreen::Borderless(None)))
+        //.with_fullscreen(Some(Fullscreen::Borderless(None)))
         .build(&event_loop)
         .unwrap();
     let mut graphics_context = unsafe { GraphicsContext::new(window) }.unwrap();
@@ -77,6 +77,20 @@ pub fn display(
                 window_id,
             } if window_id == graphics_context.window().id() => {
                 *control_flow = ControlFlow::Exit;
+            }
+            Event::WindowEvent {
+                event: WindowEvent::CursorMoved { position, .. },
+                window_id,
+            } if window_id == graphics_context.window().id() => {
+                let x = position.x as u32;
+                let y = position.y as u32;
+                let (width, height) = {
+                    let size = graphics_context.window().inner_size();
+                    (size.width, size.height)
+                };
+                println!("getting color at ({}, {})", x, y);
+                let camera = Camera::new(width, height, fov, from, to, up, oversample);
+                println!("result: {:?}", camera.color_at(x, y, &world, true));
             }
             _ => {}
         }

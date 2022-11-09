@@ -99,14 +99,14 @@ impl Camera {
     }
 
     /// Determine the color at the given x and y coordinates of the image.
-    pub fn color_at(&self, x: u32, y: u32, world: &World) -> Color {
+    pub fn color_at(&self, x: u32, y: u32, world: &World, debug: bool) -> Color {
         let mut acc = Color::black();
 
         let overfactor = 1.0 / (self.oversample + 1) as f64;
         for xo in 1..=self.oversample {
             for yo in 1..=self.oversample {
                 let ray = self.ray_for_pixel(x, y, overfactor * xo as f64, overfactor * yo as f64);
-                acc = acc + world.color_at(&ray, 1.0);
+                acc = acc + world.color_at(&ray, 1.0, debug);
             }
         }
 
@@ -118,7 +118,7 @@ impl Camera {
         let mut img = RgbImage::new(self.hsize, self.vsize);
         img.enumerate_rows_mut().par_bridge().for_each(|(y, row)| {
             for (x, _, p) in row {
-                *p = self.color_at(x, y, world).into();
+                *p = self.color_at(x, y, world, false).into();
             }
         });
         img
@@ -136,7 +136,7 @@ impl Camera {
             .par_bridge()
             .for_each(|(y, row)| {
                 for x in 0..hsize {
-                    row[x] = self.color_at(x as u32, y as u32, world).into();
+                    row[x] = self.color_at(x as u32, y as u32, world, false).into();
                 }
             });
     }

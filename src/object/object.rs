@@ -1,7 +1,4 @@
-use crate::{
-    spaces, Color, Intersection, Intersections, Mat, Material, ObjectIndex, Point, Ray, Vector,
-    World,
-};
+use crate::{spaces, Color, Intersections, Mat, Material, ObjectIndex, Point, Ray, Vector, World};
 
 /// ObjectInnner defines methods to handle the particularities of an object, in object space.
 pub trait ObjectInner: std::fmt::Debug + Sync + Send {
@@ -74,12 +71,13 @@ impl Object {
         &self,
         world: &World,
         from_obj: Option<&Object>,
-        hit: &Intersection,
+        t: f64,
         ray: &Ray<spaces::World>,
         total_contribution: f64,
+        debug: bool,
     ) -> Color {
         // the point at which the intersection occurred
-        let point = ray.position(hit.t);
+        let point = ray.position(t);
 
         // vector from point to the eye
         let eyev = -ray.direction;
@@ -106,6 +104,7 @@ impl Object {
             eyev,
             normalv,
             total_contribution,
+            debug,
         )
     }
 
@@ -163,10 +162,10 @@ mod test {
         let mut inters = Intersections::default();
         o.intersect(ObjectIndex::test_value(0), &r, &mut inters);
         // ray of length 2 hits sphere at 0, 0, 9, so t=4.5
-        let (from_obj, hit) = inters.hit();
+        let (from_obj, t, to_obj) = inters.hit();
         assert!(from_obj.is_none());
-        assert_relative_eq!(hit.unwrap().t, 4.5);
-        assert_eq!(hit.unwrap().object_index, ObjectIndex::test_value(0));
+        assert_relative_eq!(t.unwrap(), 4.5);
+        assert_eq!(to_obj, Some(ObjectIndex::test_value(0)));
     }
 
     #[test]
@@ -178,9 +177,9 @@ mod test {
         // ray hits halfway up the sphere.
         let mut inters = Intersections::default();
         o.intersect(ObjectIndex::test_value(0), &r, &mut inters);
-        let (_, hit) = inters.hit();
-        let p = r.position(hit.unwrap().t);
-        assert_eq!(hit.unwrap().object_index, ObjectIndex::test_value(0));
+        let (_, t, to_obj) = inters.hit();
+        let p = r.position(t.unwrap());
+        assert_eq!(to_obj, Some(ObjectIndex::test_value(0)));
 
         let n = o.normal(p);
 

@@ -115,8 +115,8 @@ impl World {
 
         let mut inters = Intersections::default();
         self.intersect(&to_light_ray, &mut inters);
-        if let (_, Some(hit)) = inters.hit() {
-            hit.t < to_light.magnitude()
+        if let (_, Some(t), _) = inters.hit() {
+            t < to_light.magnitude()
         } else {
             false
         }
@@ -136,7 +136,15 @@ impl World {
 
     /// This function may recurse, and will terminate when the total contribution is small enough
     /// to not matter.  The initial `total_contribution` should be zero.
-    pub(crate) fn color_at(&self, ray: &Ray<spaces::World>, total_contribution: f64) -> Color {
+    pub(crate) fn color_at(
+        &self,
+        ray: &Ray<spaces::World>,
+        total_contribution: f64,
+        debug: bool,
+    ) -> Color {
+        if debug {
+            dbg!((ray, total_contribution));
+        }
         // stop recursing when the effect is small enough
         if total_contribution < MIN_CONTRIBUTION {
             return Color::black();
@@ -144,11 +152,22 @@ impl World {
 
         let mut inters = Intersections::default();
         self.intersect(ray, &mut inters);
-        if let (from_obj_idx, Some(hit)) = inters.hit() {
+        if debug {
+            dbg!(&inters);
+        }
+        if let (from_obj_idx, Some(t), to_obj_idx) = inters.hit() {
+            if debug {
+                dbg!((from_obj_idx, Some(t), to_obj_idx));
+            }
             let from_obj = from_obj_idx.map(|i| &self.objects[i.0]);
-            let hit_obj = &self.objects[hit.object_index.0];
-            hit_obj.color_at(self, from_obj, hit, ray, total_contribution)
+            let to_obj = to_obj_idx.map(|i| &self.objects[i.0]);
+            // one of from_obj or to_obj must exist, since we got a `t` value
+            let hit_obj = to_obj.or(from_obj).expect("should have had an object");
+            hit_obj.color_at(self, from_obj, t, ray, total_contribution, debug)
         } else {
+            if debug {
+                println!("no hits");
+            }
             Color::black()
         }
     }
@@ -189,7 +208,7 @@ mod test {
     fn color_at_miss() {
         let w = World::test_world();
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 1, 0));
-        assert_relative_eq!(w.color_at(&r, 1.0), Color::black());
+        assert_relative_eq!(w.color_at(&r, 1.0, true), Color::black());
     }
 
     #[test]
@@ -197,7 +216,7 @@ mod test {
         let w = World::test_world();
         let r = Ray::new(Point::new(0, 0, -5), Vector::new(0, 0, 1));
         assert_relative_eq!(
-            w.color_at(&r, 1.0),
+            w.color_at(&r, 1.0, true),
             Color::new(
                 0.38066119308103435,
                 0.47582649135129296,
@@ -224,7 +243,7 @@ mod test {
                 .with_material(Material::default().with_ambient(1.0)),
         );
         let r = Ray::new(Point::new(0, 0, 0.75), Vector::new(0, 0, -1));
-        assert_relative_eq!(w.color_at(&r, 1.0), Color::white());
+        assert_relative_eq!(w.color_at(&r, 1.0, true), Color::white());
     }
 
     #[test]

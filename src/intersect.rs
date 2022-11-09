@@ -57,8 +57,8 @@ impl Intersections {
     }
 
     /// Get the first intersection with a non-negative `t`, along with the object _from_
-    /// which that intersection occurs.
-    pub fn hit(&mut self) -> (Option<ObjectIndex>, Option<&Intersection>) {
+    /// and _to_ which that intersection occurs.
+    pub fn hit(&mut self) -> (Option<ObjectIndex>, Option<f64>, Option<ObjectIndex>) {
         self.sort();
 
         // TODO: do this without allocations?
@@ -79,10 +79,11 @@ impl Intersections {
                 containers.push(h);
             }
             if h.t >= 0.0 {
-                return (from_obj, containers.last().map(|iref| *iref));
+                let last = containers.last();
+                return (from_obj, Some(h.t), last.map(|i| i.object_index));
             }
         }
-        (from_obj, None)
+        (from_obj, None, None)
     }
 
     /// Get an iterator over all hits, in order by `t`
@@ -111,8 +112,11 @@ mod test {
     fn hit_all_positive_t() {
         let mut inters = Intersections::default();
         inters.add(1.0, ObjectIndex::test_value(1));
-        inters.add(2.0, ObjectIndex::test_value(1));
-        assert_relative_eq!(inters.hit().1.expect("a hit").t, 1.0);
+        inters.add(2.0, ObjectIndex::test_value(2));
+        let (from_obj, t, to_obj) = inters.hit();
+        assert_eq!(from_obj, None);
+        assert_relative_eq!(t.unwrap(), 1.0);
+        assert_eq!(to_obj, Some(ObjectIndex::test_value(1)));
     }
 
     #[test]
@@ -120,7 +124,10 @@ mod test {
         let mut inters = Intersections::default();
         inters.add(-1.0, ObjectIndex::test_value(1));
         inters.add(1.0, ObjectIndex::test_value(2));
-        assert_relative_eq!(inters.hit().1.expect("a hit").t, 1.0);
+        let (from_obj, t, to_obj) = inters.hit();
+        assert_eq!(from_obj, Some(ObjectIndex::test_value(1)));
+        assert_relative_eq!(t.unwrap(), 1.0);
+        assert_eq!(to_obj, Some(ObjectIndex::test_value(2)));
     }
 
     #[test]
@@ -128,7 +135,10 @@ mod test {
         let mut inters = Intersections::default();
         inters.add(-1.0, ObjectIndex::test_value(1));
         inters.add(-2.0, ObjectIndex::test_value(1));
-        assert!(inters.hit().1.is_none());
+        let (from_obj, t, to_obj) = inters.hit();
+        assert_eq!(from_obj, None);
+        assert_eq!(t, None);
+        assert_eq!(to_obj, None);
     }
 
     #[test]
@@ -138,7 +148,10 @@ mod test {
         inters.add(7.0, ObjectIndex::test_value(2));
         inters.add(-3.0, ObjectIndex::test_value(3));
         inters.add(2.0, ObjectIndex::test_value(4));
-        assert_relative_eq!(inters.hit().1.expect("a hit").t, 2.0);
+        let (from_obj, t, to_obj) = inters.hit();
+        assert_eq!(from_obj, Some(ObjectIndex::test_value(3)));
+        assert_relative_eq!(t.unwrap(), 2.0);
+        assert_eq!(to_obj, Some(ObjectIndex::test_value(4)));
     }
 
     #[test]
@@ -150,64 +163,60 @@ mod test {
         let mut w = World::default();
         let a = w.add_object(
             Object::new(Sphere)
-                .with_material(Material::default().with_transparency(1.0, 1.5))
+                .with_material(Material::default().with_transparency(0.99, 1.5))
                 .with_transform(Mat::identity().scale(3, 3, 3)),
         );
         let b = w.add_object(
             Object::new(Sphere)
-                .with_material(Material::default().with_transparency(1.0, 2.0))
+                .with_material(Material::default().with_transparency(0.99, 2.0))
                 .with_transform(Mat::identity().translate(0, 0, -0.25)),
         );
         let c = w.add_object(
             Object::new(Sphere)
-                .with_material(Material::default().with_transparency(1.0, 2.5))
+                .with_material(Material::default().with_transparency(0.99, 2.5))
                 .with_transform(Mat::identity().translate(0, 0, 0.25)),
         );
-
-        fn idx(inter: Option<&Intersection>) -> Option<ObjectIndex> {
-            inter.map(|i| i.object_index)
-        }
 
         let mut inters = Intersections::default();
         let r: Ray<spaces::World> = Ray::new(Point::new(0, 0, -4), Vector::new(0, 0, 1));
         w.intersect(&r, &mut inters);
-        let (from_obj, hit) = inters.hit();
-        assert_eq!((from_obj, idx(hit)), (None, Some(a)));
+        let (from_obj, _, to_obj) = inters.hit();
+        assert_eq!((from_obj, to_obj), (None, Some(a)));
 
         let mut inters = Intersections::default();
         let r: Ray<spaces::World> = Ray::new(Point::new(0, 0, -2), Vector::new(0, 0, 1));
         w.intersect(&r, &mut inters);
-        let (from_obj, hit) = inters.hit();
-        assert_eq!((from_obj, idx(hit)), (Some(a), Some(b)));
+        let (from_obj, _, to_obj) = inters.hit();
+        assert_eq!((from_obj, to_obj), (Some(a), Some(b)));
 
         let mut inters = Intersections::default();
         let r: Ray<spaces::World> = Ray::new(Point::new(0, 0, -1), Vector::new(0, 0, 1));
         w.intersect(&r, &mut inters);
-        let (from_obj, hit) = inters.hit();
-        assert_eq!((from_obj, idx(hit)), (Some(b), Some(c)));
+        let (from_obj, _, to_obj) = inters.hit();
+        assert_eq!((from_obj, to_obj), (Some(b), Some(c)));
 
         let mut inters = Intersections::default();
         let r: Ray<spaces::World> = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
         w.intersect(&r, &mut inters);
-        let (from_obj, hit) = inters.hit();
-        assert_eq!((from_obj, idx(hit)), (Some(c), Some(c)));
+        let (from_obj, _, to_obj) = inters.hit();
+        assert_eq!((from_obj, to_obj), (Some(c), Some(c)));
 
         let mut inters = Intersections::default();
         let r: Ray<spaces::World> = Ray::new(Point::new(0, 0, 1), Vector::new(0, 0, 1));
         w.intersect(&r, &mut inters);
-        let (from_obj, hit) = inters.hit();
-        assert_eq!((from_obj, idx(hit)), (Some(c), Some(a)));
+        let (from_obj, _, to_obj) = inters.hit();
+        assert_eq!((from_obj, to_obj), (Some(c), Some(a)));
 
         let mut inters = Intersections::default();
         let r: Ray<spaces::World> = Ray::new(Point::new(0, 0, 2), Vector::new(0, 0, 1));
         w.intersect(&r, &mut inters);
-        let (from_obj, hit) = inters.hit();
-        assert_eq!((from_obj, idx(hit)), (Some(a), None));
+        let (from_obj, _, to_obj) = inters.hit();
+        assert_eq!((from_obj, to_obj), (Some(a), None));
 
         let mut inters = Intersections::default();
         let r: Ray<spaces::World> = Ray::new(Point::new(0, 0, 4), Vector::new(0, 0, 1));
         w.intersect(&r, &mut inters);
-        let (from_obj, hit) = inters.hit();
-        assert_eq!((from_obj, idx(hit)), (None, None));
+        let (from_obj, _, to_obj) = inters.hit();
+        assert_eq!((from_obj, to_obj), (None, None));
     }
 }

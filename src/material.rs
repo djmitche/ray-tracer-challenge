@@ -65,6 +65,7 @@ impl Material {
     }
 
     pub fn with_transparency(mut self, transparency: f64, refractive_index: f64) -> Self {
+        debug_assert!(transparency < 1.0);
         self.transparency = transparency;
         self.refractive_index = refractive_index;
         self
@@ -76,25 +77,28 @@ impl Material {
         point: Point<spaces::World>,
         reflectv: Vector<spaces::World>,
         total_contribution: f64,
+        debug: bool,
     ) -> Color {
         // move 0.01 along the ray to escape the object on which point
         // is situated
         let refl_ray = Ray::new(point + reflectv * 0.01, reflectv);
-        world.color_at(&refl_ray, total_contribution * self.reflectivity) * self.reflectivity
+        if debug {
+            println!("reflecting");
+        }
+        world.color_at(&refl_ray, total_contribution * self.reflectivity, debug) * self.reflectivity
     }
 
     fn refracted_color(
         &self,
         world: &World,
+        n1: f64,
+        n2: f64,
         point: Point<spaces::World>,
-        from_material: Option<&Material>,
         eyev: Vector<spaces::World>,
         normalv: Vector<spaces::World>,
         total_contribution: f64,
+        debug: bool,
     ) -> Color {
-        let n1 = from_material.map(|m| m.refractive_index).unwrap_or(1.0);
-        let n2 = self.refractive_index;
-
         let n_ratio = n1 / n2;
         let cos_i = eyev.dot(normalv);
         let sin2_t = n_ratio * n_ratio * (1.0 - cos_i * cos_i);
@@ -106,11 +110,42 @@ impl Material {
 
         let cos_t = (1.0 - sin2_t).sqrt();
         let direction = normalv * (n_ratio * cos_i - cos_t) - eyev * n_ratio;
-        // TODO: move 0.01 along the direction to escape the object
-        // is situated
+        // move 0.01 along the direction to escape the object is situated
         let refract_ray = Ray::new(point + direction * 0.01, direction);
 
-        world.color_at(&refract_ray, total_contribution * self.transparency) * self.transparency
+        if debug {
+            println!("refracting");
+        }
+        world.color_at(&refract_ray, total_contribution * self.transparency, debug)
+            * self.transparency
+    }
+
+    /// Calculate the reflectance using the schlick method
+    fn reflectance(
+        n1: f64,
+        n2: f64,
+        eyev: Vector<spaces::World>,
+        normalv: Vector<spaces::World>,
+    ) -> f64 {
+        // cosine of the angle between eye and normal
+        let mut cos = eyev.dot(normalv);
+
+        // TIR occurs if n1 > n2 and n sin > 1
+        if n1 > n2 {
+            let n = n1 / n2;
+            let sin2_t = n * n * (1.0 - cos * cos);
+            if sin2_t > 1.0 {
+                return 1.0;
+            }
+
+            let cos_t = (1.0 - sin2_t).sqrt();
+            // when n1 > n2, use cos(theta_t) instead
+            cos = cos_t;
+        }
+
+        let r0 = (n1 - n2) / (n1 + n2);
+        let r0 = r0 * r0;
+        r0 + (1.0 - r0) * (1.0 - cos).powf(5.0)
     }
 
     pub(crate) fn color_at(
@@ -123,6 +158,7 @@ impl Material {
         eyev: Vector<spaces::World>,
         normalv: Vector<spaces::World>,
         total_contribution: f64,
+        debug: bool,
     ) -> Color {
         let material_color = self.pattern.color_at(obj_point);
 
@@ -154,22 +190,44 @@ impl Material {
             }
         }
 
+        let n1 = from_material.map(|m| m.refractive_index).unwrap_or(1.0);
+        let n2 = self.refractive_index;
+
         // add reflected color
-        if self.reflectivity > 0.0 {
+        let reflected = if self.reflectivity > 0.0 {
             let reflectv = ray.direction.reflect(normalv);
-            color += self.reflected_color(world, world_point, reflectv, total_contribution);
-        }
+            Some(self.reflected_color(world, world_point, reflectv, total_contribution, debug))
+        } else {
+            None
+        };
 
         // add refracted color
-        if self.transparency > 0.0 {
-            color += self.refracted_color(
+        let refracted = if self.transparency > 0.0 {
+            Some(self.refracted_color(
                 world,
+                n1,
+                n2,
                 world_point,
-                from_material,
                 eyev,
                 normalv,
                 total_contribution,
-            );
+                debug,
+            ))
+        } else {
+            None
+        };
+
+        // if only one of reflection or refraction has occurred, just use that; otherwise,
+        // combine the two based on reflectance
+        match (reflected, refracted) {
+            (Some(reflected), None) => color += reflected,
+            (None, Some(refracted)) => color += refracted,
+            (Some(reflected), Some(refracted)) => {
+                let reflectance = Self::reflectance(n1, n2, eyev, normalv);
+                color += reflected * reflectance;
+                color += refracted * (1.0 - reflectance);
+            }
+            (None, None) => {}
         }
 
         color
@@ -199,7 +257,8 @@ mod test {
                 position.as_space(),
                 eyev,
                 normalv,
-                1.0
+                1.0,
+                true
             ),
             Color::new(1.9, 1.9, 1.9)
         );
@@ -222,7 +281,8 @@ mod test {
                 position.as_space(),
                 eyev,
                 normalv,
-                1.0
+                1.0,
+                true
             ),
             Color::new(1.0, 1.0, 1.0)
         );
@@ -245,7 +305,8 @@ mod test {
                 position.as_space(),
                 eyev,
                 normalv,
-                1.0
+                1.0,
+                true
             ),
             Color::new(0.7363961030678927, 0.7363961030678927, 0.7363961030678927)
         );
@@ -268,7 +329,8 @@ mod test {
                 position.as_space(),
                 eyev,
                 normalv,
-                1.0
+                1.0,
+                true
             ),
             Color::new(1.6363961030678928, 1.6363961030678928, 1.6363961030678928)
         );
@@ -291,7 +353,8 @@ mod test {
                 position.as_space(),
                 eyev,
                 normalv,
-                1.0
+                1.0,
+                true
             ),
             Color::new(0.1, 0.1, 0.1)
         );
@@ -319,7 +382,8 @@ mod test {
                 position.as_space(),
                 eyev,
                 normalv,
-                1.0
+                1.0,
+                true
             ),
             Color::new(0.1, 0.1, 0.1),
         );
@@ -343,7 +407,7 @@ mod test {
         );
         let m = Material::default().with_reflectivity(0.0);
         assert_relative_eq!(
-            m.reflected_color(&w, Point::new(0, 0, 0), Vector::new(1, 0, 0), 1.0),
+            m.reflected_color(&w, Point::new(0, 0, 0), Vector::new(1, 0, 0), 1.0, true),
             Color::black()
         );
     }
@@ -364,8 +428,53 @@ mod test {
         // make believe we have a reflection off a plane at y = 0
         let m = Material::default().with_reflectivity(1.0);
         assert_relative_eq!(
-            m.reflected_color(&w, Point::new(0, 0, 0), Vector::new(0, 1, 0), 1.0),
+            m.reflected_color(&w, Point::new(0, 0, 0), Vector::new(0, 1, 0), 1.0, true),
             Color::new(0, 0, 1),
+        );
+    }
+
+    fn glass_sphere() -> Object {
+        Object::new(Sphere).with_material(Material::default().with_transparency(0.99, 1.5))
+    }
+
+    #[test]
+    fn schlick_tir() {
+        // hit a sphere with index 1.5 at a 45 degree angle
+        let halfsqrt2 = 2f64.sqrt() / 2.0;
+        let eyev = Vector::new(0, -1, 0);
+        let normalv = Vector::new(0, halfsqrt2, halfsqrt2);
+        let n1 = 1.5;
+        let n2 = 1.0;
+        assert_relative_eq!(Material::reflectance(n1, n2, eyev, normalv), 1.0);
+    }
+
+    #[test]
+    fn schlick_perpendicular() {
+        let eyev = Vector::new(0, -1, 0);
+        let normalv = Vector::new(0, 1, 0);
+        let n1 = 1.5;
+        let n2 = 1.0;
+        assert_relative_eq!(Material::reflectance(n1, n2, eyev, normalv), 0.04);
+    }
+
+    #[test]
+    fn schlick_glancing() {
+        // make a glancing blow off a sphere
+        let obj = glass_sphere();
+        let eye = Point::new(0, 0.99, -2);
+        let ray = Ray::new(eye, Vector::new(0, 0, 1));
+        let mut inters = Intersections::default();
+        obj.intersect(ObjectIndex::test_value(0), &ray, &mut inters);
+        let (_, t, _) = inters.hit();
+
+        let point = ray.position(t.unwrap());
+        let eyev = (eye - point).normalize();
+        let normalv = obj.normal(point);
+        let n1 = 1.0;
+        let n2 = 1.5;
+        assert_relative_eq!(
+            Material::reflectance(n1, n2, eyev, normalv),
+            0.4888143830387388
         );
     }
 }
