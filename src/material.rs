@@ -9,6 +9,8 @@ pub struct Material {
     specular: f64,
     shininess: f64,
     reflectivity: f64,
+    transparency: f64,
+    refractive_index: f64,
 }
 
 impl Default for Material {
@@ -20,6 +22,8 @@ impl Default for Material {
             specular: 0.9,
             shininess: 200.0,
             reflectivity: 0.0,
+            transparency: 0.0,
+            refractive_index: 1.0,
         }
     }
 }
@@ -60,6 +64,12 @@ impl Material {
         self
     }
 
+    pub fn with_transparency(mut self, transparency: f64, refractive_index: f64) -> Self {
+        self.transparency = transparency;
+        self.refractive_index = refractive_index;
+        self
+    }
+
     fn reflected_color(
         &self,
         world: &World,
@@ -73,9 +83,40 @@ impl Material {
         world.color_at(&refl_ray, total_contribution * self.reflectivity) * self.reflectivity
     }
 
+    fn refracted_color(
+        &self,
+        world: &World,
+        point: Point<spaces::World>,
+        from_material: Option<&Material>,
+        eyev: Vector<spaces::World>,
+        normalv: Vector<spaces::World>,
+        total_contribution: f64,
+    ) -> Color {
+        let n1 = from_material.map(|m| m.refractive_index).unwrap_or(1.0);
+        let n2 = self.refractive_index;
+
+        let n_ratio = n1 / n2;
+        let cos_i = eyev.dot(normalv);
+        let sin2_t = n_ratio * n_ratio * (1.0 - cos_i * cos_i);
+
+        if sin2_t > 1.0 {
+            // total internal reflection
+            return Color::black();
+        }
+
+        let cos_t = (1.0 - sin2_t).sqrt();
+        let direction = normalv * (n_ratio * cos_i - cos_t) - eyev * n_ratio;
+        // TODO: move 0.01 along the direction to escape the object
+        // is situated
+        let refract_ray = Ray::new(point + direction * 0.01, direction);
+
+        world.color_at(&refract_ray, total_contribution * self.transparency) * self.transparency
+    }
+
     pub(crate) fn color_at(
         &self,
         world: &World,
+        from_material: Option<&Material>,
         ray: &Ray<spaces::World>,
         world_point: Point<spaces::World>,
         obj_point: Point<spaces::Object>,
@@ -101,14 +142,14 @@ impl Material {
             // calculate diffuse and specular
             if light_dot_normal > 0.0 {
                 // compute the diffuse contribution
-                color = color + eff_color * self.diffuse * light_dot_normal;
+                color += eff_color * self.diffuse * light_dot_normal;
 
                 // reflect_dot_eye is the cosine of the angle between the reflection vector and the eye
                 // vector.
                 let reflect_dot_eye = (-light_at.direction).reflect(normalv).dot(eyev);
                 if reflect_dot_eye > 0.0 {
                     let factor = reflect_dot_eye.powf(self.shininess);
-                    color = color + light_at.intensity * self.specular * factor;
+                    color += light_at.intensity * self.specular * factor;
                 }
             }
         }
@@ -116,8 +157,20 @@ impl Material {
         // add reflected color
         if self.reflectivity > 0.0 {
             let reflectv = ray.direction.reflect(normalv);
-            color = color + self.reflected_color(world, world_point, reflectv, total_contribution);
-        };
+            color += self.reflected_color(world, world_point, reflectv, total_contribution);
+        }
+
+        // add refracted color
+        if self.transparency > 0.0 {
+            color += self.refracted_color(
+                world,
+                world_point,
+                from_material,
+                eyev,
+                normalv,
+                total_contribution,
+            );
+        }
 
         color
     }
@@ -138,7 +191,16 @@ mod test {
         let w = World::new(Light::new_point(Point::new(0, 0, -10), Color::white()));
         let m = Material::default();
         assert_relative_eq!(
-            m.color_at(&w, &ray, position, position.as_space(), eyev, normalv, 1.0),
+            m.color_at(
+                &w,
+                None,
+                &ray,
+                position,
+                position.as_space(),
+                eyev,
+                normalv,
+                1.0
+            ),
             Color::new(1.9, 1.9, 1.9)
         );
     }
@@ -152,7 +214,16 @@ mod test {
         let w = World::new(Light::new_point(Point::new(0, 0, -10), Color::white()));
         let m = Material::default();
         assert_relative_eq!(
-            m.color_at(&w, &ray, position, position.as_space(), eyev, normalv, 1.0),
+            m.color_at(
+                &w,
+                None,
+                &ray,
+                position,
+                position.as_space(),
+                eyev,
+                normalv,
+                1.0
+            ),
             Color::new(1.0, 1.0, 1.0)
         );
     }
@@ -166,7 +237,16 @@ mod test {
         let w = World::new(Light::new_point(Point::new(0, 10, -10), Color::white()));
         let m = Material::default();
         assert_relative_eq!(
-            m.color_at(&w, &ray, position, position.as_space(), eyev, normalv, 1.0),
+            m.color_at(
+                &w,
+                None,
+                &ray,
+                position,
+                position.as_space(),
+                eyev,
+                normalv,
+                1.0
+            ),
             Color::new(0.7363961030678927, 0.7363961030678927, 0.7363961030678927)
         );
     }
@@ -180,7 +260,16 @@ mod test {
         let w = World::new(Light::new_point(Point::new(0, 10, -10), Color::white()));
         let m = Material::default();
         assert_relative_eq!(
-            m.color_at(&w, &ray, position, position.as_space(), eyev, normalv, 1.0),
+            m.color_at(
+                &w,
+                None,
+                &ray,
+                position,
+                position.as_space(),
+                eyev,
+                normalv,
+                1.0
+            ),
             Color::new(1.6363961030678928, 1.6363961030678928, 1.6363961030678928)
         );
     }
@@ -194,7 +283,16 @@ mod test {
         let w = World::new(Light::new_point(Point::new(0, 0, 10), Color::white()));
         let m = Material::default();
         assert_relative_eq!(
-            m.color_at(&w, &ray, position, position.as_space(), eyev, normalv, 1.0),
+            m.color_at(
+                &w,
+                None,
+                &ray,
+                position,
+                position.as_space(),
+                eyev,
+                normalv,
+                1.0
+            ),
             Color::new(0.1, 0.1, 0.1)
         );
     }
@@ -213,7 +311,16 @@ mod test {
         );
         let m = Material::default();
         assert_relative_eq!(
-            m.color_at(&w, &ray, position, position.as_space(), eyev, normalv, 1.0),
+            m.color_at(
+                &w,
+                None,
+                &ray,
+                position,
+                position.as_space(),
+                eyev,
+                normalv,
+                1.0
+            ),
             Color::new(0.1, 0.1, 0.1),
         );
     }

@@ -73,6 +73,7 @@ impl Object {
     pub(crate) fn color_at(
         &self,
         world: &World,
+        from_obj: Option<&Object>,
         hit: &Intersection,
         ray: &Ray<spaces::World>,
         total_contribution: f64,
@@ -98,6 +99,7 @@ impl Object {
 
         self.material.color_at(
             world,
+            from_obj.map(|o| &o.material),
             ray,
             point,
             obj_point,
@@ -161,9 +163,10 @@ mod test {
         let mut inters = Intersections::default();
         o.intersect(ObjectIndex::test_value(0), &r, &mut inters);
         // ray of length 2 hits sphere at 0, 0, 9, so t=4.5
-        let hit = inters.hit().expect("intersection");
-        assert_relative_eq!(hit.t, 4.5);
-        assert_eq!(hit.object_index, ObjectIndex::test_value(0));
+        let (from_obj, hit) = inters.hit();
+        assert!(from_obj.is_none());
+        assert_relative_eq!(hit.unwrap().t, 4.5);
+        assert_eq!(hit.unwrap().object_index, ObjectIndex::test_value(0));
     }
 
     #[test]
@@ -175,12 +178,12 @@ mod test {
         // ray hits halfway up the sphere.
         let mut inters = Intersections::default();
         o.intersect(ObjectIndex::test_value(0), &r, &mut inters);
-        let hit = inters.hit().expect("intersection");
-        let p = r.position(hit.t);
+        let (_, hit) = inters.hit();
+        let p = r.position(hit.unwrap().t);
+        assert_eq!(hit.unwrap().object_index, ObjectIndex::test_value(0));
 
         let n = o.normal(p);
 
         assert_relative_eq!(n.magnitude(), 1.0);
-        assert_eq!(hit.object_index, ObjectIndex::test_value(0));
     }
 }

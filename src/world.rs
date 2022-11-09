@@ -8,6 +8,7 @@ const MIN_CONTRIBUTION: f64 = 0.001;
 pub struct ObjectIndex(usize);
 
 impl ObjectIndex {
+    #[cfg(test)]
     pub fn test_value(i: usize) -> ObjectIndex {
         ObjectIndex(i)
     }
@@ -99,7 +100,7 @@ impl World {
     }
 
     /// Intersect the given ray with all objects in the world.
-    fn intersect(&self, ray: &Ray<spaces::World>, inters: &mut Intersections) {
+    pub(crate) fn intersect(&self, ray: &Ray<spaces::World>, inters: &mut Intersections) {
         for (i, o) in self.objects.iter().enumerate() {
             o.intersect(ObjectIndex(i), ray, inters);
         }
@@ -114,7 +115,7 @@ impl World {
 
         let mut inters = Intersections::default();
         self.intersect(&to_light_ray, &mut inters);
-        if let Some(hit) = inters.hit() {
+        if let (_, Some(hit)) = inters.hit() {
             hit.t < to_light.magnitude()
         } else {
             false
@@ -143,12 +144,24 @@ impl World {
 
         let mut inters = Intersections::default();
         self.intersect(ray, &mut inters);
-        if let Some(hit) = inters.hit() {
-            let obj = &self.objects[hit.object_index.0];
-            obj.color_at(self, hit, ray, total_contribution)
+        if let (from_obj_idx, Some(hit)) = inters.hit() {
+            let from_obj = from_obj_idx.map(|i| &self.objects[i.0]);
+            let hit_obj = &self.objects[hit.object_index.0];
+            hit_obj.color_at(self, from_obj, hit, ray, total_contribution)
         } else {
             Color::black()
         }
+    }
+}
+
+/// Index the world by ObjectIndex to get an object reference.  Note that
+/// ObjectIndex instances are only created when objects are added, so the
+/// object is guaranteed to exist.
+impl std::ops::Index<ObjectIndex> for World {
+    type Output = Object;
+
+    fn index(&self, idx: ObjectIndex) -> &Object {
+        &self.objects[idx.0]
     }
 }
 
@@ -157,18 +170,6 @@ mod test {
     use super::*;
     use crate::*;
     use approx::*;
-
-    #[test]
-    fn shade_intersection_inside() {
-        let mut w = World::test_world();
-        w.light = Light::new_point(Point::new(0, 0.25, 0), Color::white());
-        let r = Ray::new(Point::new(0, 0, 0), Vector::new(0, 0, 1));
-        let c = w.color_at(&r, 1.0);
-        assert_relative_eq!(
-            c,
-            Color::new(0.9049844720832575, 0.9049844720832575, 0.9049844720832575)
-        );
-    }
 
     #[test]
     fn intersect_world_with_ray() {

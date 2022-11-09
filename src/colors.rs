@@ -122,6 +122,14 @@ impl std::ops::Add for Color {
     }
 }
 
+impl std::ops::AddAssign for Color {
+    fn add_assign(&mut self, other: Self) {
+        self.red += other.red;
+        self.green += other.green;
+        self.blue += other.blue;
+    }
+}
+
 impl std::ops::Sub for Color {
     type Output = Self;
 
