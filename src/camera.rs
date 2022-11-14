@@ -1,4 +1,4 @@
-use crate::{mat4, spaces, Color, Mat, Point, Ray, Vector, World};
+use crate::{mat4, spaces, Color, Mat, Point, Ray, Vector};
 use image::RgbImage;
 use rayon::prelude::*;
 
@@ -27,6 +27,11 @@ pub struct Camera {
 
     /// number of times to oversample each pixel
     oversample: u32,
+}
+
+/// A value implementing RayColor can return a color given a ray.
+pub trait RayColor: Send + Sync {
+    fn color_at(&self, ray: &Ray<spaces::World>, debug: bool) -> Color;
 }
 
 impl Camera {
@@ -99,14 +104,14 @@ impl Camera {
     }
 
     /// Determine the color at the given x and y coordinates of the image.
-    pub fn color_at(&self, x: u32, y: u32, world: &World, debug: bool) -> Color {
+    pub fn color_at(&self, x: u32, y: u32, world: &impl RayColor, debug: bool) -> Color {
         let mut acc = Color::black();
 
         let overfactor = 1.0 / (self.oversample + 1) as f64;
         for xo in 1..=self.oversample {
             for yo in 1..=self.oversample {
                 let ray = self.ray_for_pixel(x, y, overfactor * xo as f64, overfactor * yo as f64);
-                acc = acc + world.color_at(&ray, 1.0, debug);
+                acc = acc + world.color_at(&ray, debug);
             }
         }
 
@@ -114,7 +119,7 @@ impl Camera {
     }
 
     /// Create an image
-    pub fn render(&self, world: &World) -> RgbImage {
+    pub fn render(&self, world: &impl RayColor) -> RgbImage {
         let mut img = RgbImage::new(self.hsize, self.vsize);
         img.enumerate_rows_mut().par_bridge().for_each(|(y, row)| {
             for (x, _, p) in row {
@@ -125,7 +130,7 @@ impl Camera {
     }
 
     /// Render the image as a buffer of u32's
-    pub fn u32_buffer(&self, world: &World, buf: &mut [u32]) {
+    pub fn u32_buffer(&self, world: &impl RayColor, buf: &mut [u32]) {
         let hsize = self.hsize as usize;
         let vsize = self.vsize as usize;
         debug_assert_eq!(buf.len(), hsize * vsize);

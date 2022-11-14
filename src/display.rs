@@ -1,4 +1,4 @@
-use crate::{spaces, Camera, Point, Vector, World};
+use crate::{spaces, Camera, Point, RayColor, Vector};
 use softbuffer::GraphicsContext;
 use winit::event::{DeviceEvent, Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -6,7 +6,7 @@ use winit::window::{Fullscreen, Window, WindowBuilder};
 
 /// Display the given world in a GUI window.
 pub fn display(
-    world: World,
+    world: impl RayColor + 'static,
     fov: f64,
     from: Point<spaces::World>,
     to: Point<spaces::World>,

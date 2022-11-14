@@ -7,6 +7,7 @@ mod math;
 mod object;
 mod pattern;
 mod ray;
+mod sdf;
 pub mod spaces;
 mod world;
 
@@ -19,4 +20,5 @@ pub use math::*;
 pub use object::*;
 pub use pattern::*;
 pub use ray::*;
+pub use sdf::*;
 pub use world::*;

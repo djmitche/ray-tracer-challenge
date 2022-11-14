@@ -1,4 +1,4 @@
-use crate::{spaces, Color, Intersections, Object, Point, Ray, Vector};
+use crate::{spaces, Color, Intersections, Object, Point, Ray, RayColor, Vector};
 
 /// The minimum total_contribution for which color_at_inner will make a calculation
 const MIN_CONTRIBUTION: f64 = 0.001;
@@ -133,7 +133,7 @@ impl World {
 
     /// Determine the color received by an eye at the origin of the given ray, with
     /// a measure of total contribution to the final pixel.
-
+    ///
     /// This function may recurse, and will terminate when the total contribution is small enough
     /// to not matter.  The initial `total_contribution` should be zero.
     pub(crate) fn color_at(
@@ -170,6 +170,12 @@ impl World {
             }
             Color::black()
         }
+    }
+}
+
+impl RayColor for World {
+    fn color_at(&self, ray: &Ray<spaces::World>, debug: bool) -> Color {
+        World::color_at(self, ray, 1.0, debug)
     }
 }
 
