@@ -14,13 +14,13 @@ impl<SDF: Sdf + Send + Sync> RayMarcher<SDF> {
     }
 
     fn normal(&self, point: Point<spaces::World>) -> Vector<spaces::World> {
-        let TINY_X: Vector<spaces::World> = Vector::new(0.00001, 0, 0);
-        let TINY_Y: Vector<spaces::World> = Vector::new(0, 0.00001, 0);
-        let TINY_Z: Vector<spaces::World> = Vector::new(0, 0, 0.00001);
+        let tiny_x: Vector<spaces::World> = Vector::new(0.00001, 0, 0);
+        let tiny_y: Vector<spaces::World> = Vector::new(0, 0.00001, 0);
+        let tiny_z: Vector<spaces::World> = Vector::new(0, 0, 0.00001);
 
-        let grad_x = self.sdf.distance(&(point + TINY_X)) - self.sdf.distance(&(point - TINY_X));
-        let grad_y = self.sdf.distance(&(point + TINY_Y)) - self.sdf.distance(&(point - TINY_Y));
-        let grad_z = self.sdf.distance(&(point + TINY_Z)) - self.sdf.distance(&(point - TINY_Z));
+        let grad_x = self.sdf.distance(&(point + tiny_x)) - self.sdf.distance(&(point - tiny_x));
+        let grad_y = self.sdf.distance(&(point + tiny_y)) - self.sdf.distance(&(point - tiny_y));
+        let grad_z = self.sdf.distance(&(point + tiny_z)) - self.sdf.distance(&(point - tiny_z));
 
         Vector::new(grad_x, grad_y, grad_z).normalize()
     }
@@ -33,7 +33,7 @@ impl<SDF: Sdf + Send + Sync> RayColor for RayMarcher<SDF> {
         const MAX_DISTANCE: f64 = 1000.0;
         const EPSILON: f64 = 0.001;
 
-        let LIGHT_POS: Point<spaces::World> = Point::new(2, -5, -10);
+        let light_pos: Point<spaces::World> = Point::new(2, -5, -10);
 
         for _ in 0..MAX_STEPS {
             let pos = ray.position(total_distance);
@@ -41,7 +41,7 @@ impl<SDF: Sdf + Send + Sync> RayColor for RayMarcher<SDF> {
 
             if dist < EPSILON {
                 let normal = self.normal(pos);
-                let direction_to_light = (LIGHT_POS - pos).normalize();
+                let direction_to_light = (light_pos - pos).normalize();
                 let diffuse_intensity = normal.dot(direction_to_light);
                 return Color::new(diffuse_intensity, diffuse_intensity, diffuse_intensity);
             }
