@@ -1,4 +1,5 @@
-use crate::{spaces, Intersections, ObjectIndex, ObjectInner, Point, Ray, Vector};
+use crate::csg::ObjectInner;
+use crate::{spaces, Intersections, ObjectIndex, Point, Ray, Vector};
 
 /// A unit sphere centered at the origin
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -31,6 +32,7 @@ impl ObjectInner for Sphere {
 
 #[cfg(test)]
 mod test {
+    use crate::csg::*;
     use crate::*;
     use approx::*;
     use std::f64::consts::PI;

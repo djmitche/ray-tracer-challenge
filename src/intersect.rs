@@ -95,6 +95,7 @@ impl Intersections {
 
 #[cfg(test)]
 mod test {
+    use crate::csg::*;
     use crate::*;
     use approx::*;
 

@@ -1,4 +1,5 @@
 use core::f64::consts::PI;
+use ray_tracer_challenge::csg::*;
 use ray_tracer_challenge::*;
 
 const CAMERA_Z: f64 = -4.0;

@@ -2,7 +2,7 @@ use crate::{spaces, Camera, Point, RayColor, Vector};
 use softbuffer::GraphicsContext;
 use winit::event::{DeviceEvent, Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::{Fullscreen, Window, WindowBuilder};
+use winit::window::{Window, WindowBuilder};
 
 /// Display the given world in a GUI window.
 pub fn display(

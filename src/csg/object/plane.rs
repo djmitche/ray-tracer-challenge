@@ -1,4 +1,5 @@
-use crate::{spaces, Intersections, ObjectIndex, ObjectInner, Point, Ray, Vector};
+use crate::csg::ObjectInner;
+use crate::{spaces, Intersections, ObjectIndex, Point, Ray, Vector};
 
 /// A plane in x-z
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -25,6 +26,7 @@ impl ObjectInner for Plane {
 
 #[cfg(test)]
 mod test {
+    use crate::csg::*;
     use crate::*;
     use approx::*;
 

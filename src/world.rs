@@ -1,4 +1,5 @@
-use crate::{spaces, Color, Intersections, Object, Point, Ray, RayColor, Vector};
+use crate::csg::Object;
+use crate::{spaces, Color, Intersections, Point, Ray, RayColor, Vector};
 
 /// The minimum total_contribution for which color_at_inner will make a calculation
 const MIN_CONTRIBUTION: f64 = 0.001;
@@ -81,7 +82,8 @@ impl World {
     /// Create the "default_world" from the tests.
     #[cfg(test)]
     pub(crate) fn test_world() -> Self {
-        use crate::{Mat, Material, Sphere};
+        use crate::csg::Sphere;
+        use crate::{Mat, Material};
         let mut w = World::default();
         w.add_object(
             Object::new(Sphere).with_material(
@@ -193,6 +195,7 @@ impl std::ops::Index<ObjectIndex> for World {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::csg::*;
     use crate::*;
     use approx::*;
 

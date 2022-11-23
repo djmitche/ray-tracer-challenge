@@ -1,13 +1,13 @@
 mod camera;
 mod colors;
+pub mod csg;
 mod display;
 mod intersect;
 mod material;
 mod math;
-mod object;
 mod pattern;
 mod ray;
-mod sdf;
+pub mod sdf;
 pub mod spaces;
 mod world;
 
@@ -17,8 +17,6 @@ pub use display::*;
 pub use intersect::*;
 pub use material::*;
 pub use math::*;
-pub use object::*;
 pub use pattern::*;
 pub use ray::*;
-pub use sdf::*;
 pub use world::*;

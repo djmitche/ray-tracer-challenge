@@ -236,6 +236,7 @@ impl Material {
 
 #[cfg(test)]
 mod test {
+    use crate::csg::*;
     use crate::*;
     use approx::*;
     use std::f64::consts::PI;
